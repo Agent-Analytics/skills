@@ -58,7 +58,7 @@ npx --yes @agent-analytics/cli@0.5.36 events my-site --event <first_useful_event
 
 Use `login --detached` only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the local browser callback cannot work.
 
-For paid-tier blocks, run the intended command first. If the CLI returns `PRO_REQUIRED` or a free-tier read cap, use the CLI upgrade handoff. The dashboard page first confirms the same account as the CLI, shows the blocked command and reason, and then opens payment.
+For paid-tier blocks, run the intended command first. If the CLI returns `PRO_REQUIRED` or a free-tier read cap, use the CLI upgrade handoff. The dashboard page first confirms the same account as the CLI, explains that the requested task needs Pro, and then opens payment. The full command and private analysis context stay in the agent session.
 
 ### `agent-analytics-autoresearch`
 
