@@ -51,9 +51,9 @@ Set up Agent Analytics for this project. If browser approval is needed, open it 
 Use normal browser approval first in Claude Code, Codex, Cursor, and local CLI runtimes:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.36 login
-npx --yes @agent-analytics/cli@0.5.36 create my-site --domain https://mysite.com
-npx --yes @agent-analytics/cli@0.5.36 events my-site --event <first_useful_event> --days 7 --limit 20
+npx --yes @agent-analytics/cli@0.5.37 login
+npx --yes @agent-analytics/cli@0.5.37 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.37 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
 Use `login --detached` only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the local browser callback cannot work.
