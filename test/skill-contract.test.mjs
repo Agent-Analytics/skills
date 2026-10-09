@@ -21,14 +21,14 @@ const autoresearchInitScript = readFileSync(
 const readme = readFileSync(join(root, 'README.md'), 'utf8');
 
 describe('agent-analytics skill contract', () => {
-  it('pins the official CLI to 0.5.35 everywhere', () => {
-    assert.match(skill, /version: 4\.0\.35/);
-    assert.ok(skill.includes('npx --yes @agent-analytics/cli@0.5.35'));
-    assert.ok(readme.includes('npx --yes @agent-analytics/cli@0.5.35'));
-    assert.match(autoresearchSkill, /version: 1\.0\.10/);
-    assert.ok(autoresearchSkill.includes('npx --yes @agent-analytics/cli@0.5.35'));
-    assert.ok(autoresearchBriefTemplate.includes('npx --yes @agent-analytics/cli@0.5.35'));
-    assert.ok(autoresearchSnapshotScript.includes('npx --yes @agent-analytics/cli@0.5.35'));
+  it('pins the official CLI to 0.5.36 everywhere', () => {
+    assert.match(skill, /version: 4\.0\.36/);
+    assert.ok(skill.includes('npx --yes @agent-analytics/cli@0.5.36'));
+    assert.ok(readme.includes('npx --yes @agent-analytics/cli@0.5.36'));
+    assert.match(autoresearchSkill, /version: 1\.0\.11/);
+    assert.ok(autoresearchSkill.includes('npx --yes @agent-analytics/cli@0.5.36'));
+    assert.ok(autoresearchBriefTemplate.includes('npx --yes @agent-analytics/cli@0.5.36'));
+    assert.ok(autoresearchSnapshotScript.includes('npx --yes @agent-analytics/cli@0.5.36'));
     for (const content of [
       skill,
       readme,
@@ -61,7 +61,8 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /upgrade-link --wait/i);
     assert.match(skill, /dashboard page first/i);
     assert.match(skill, /confirms the same account as the CLI/i);
-    assert.match(skill, /blocked command and reason/i);
+    assert.match(skill, /full retry command and private analysis context in the agent session/i);
+    assert.doesNotMatch(skill, /upgrade-link[^`\n]*--command/);
     assert.match(readme, /confirms the same account as the CLI/i);
     assert.match(skill, /whoami/i);
     assert.equal(/login --token/i.test(skill), false);
@@ -93,7 +94,7 @@ describe('agent-analytics skill contract', () => {
 
   it('keeps local runtimes on browser login and detached as the fallback path', () => {
     assert.match(skill, /Claude Code, Codex, Cursor, and local CLI runtimes/i);
-    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.35 login/i);
+    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.36 login/i);
     assert.match(skill, /do not choose detached login just because/i);
     assert.match(skill, /Paperclip, OpenClaw, and other issue-based runtimes/i);
     assert.match(skill, /finish code/i);
@@ -232,11 +233,11 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /Recommend a readiness fix instead of an experiment/i);
     assert.match(skill, /Read experiments against the business goal event, not exposure count/i);
     assert.match(skill, /diagnosis, metric definition, evidence, segment\/surface, caveat, and one bounded next action/i);
-    assert.match(skill, /There is no `report` command in CLI `0\.5\.35`/i);
+    assert.match(skill, /There is no `report` command in CLI `0\.5\.36`/i);
     assert.match(skill, /Produce the final report yourself from fixed-command outputs/i);
     assert.doesNotMatch(skill, /Start with .*`report`/i);
-    assert.doesNotMatch(skill, /npx --yes @agent-analytics\/cli@0\.5\.35 report/i);
-    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.35/);
+    assert.doesNotMatch(skill, /npx --yes @agent-analytics\/cli@0\.5\.36 report/i);
+    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.36/);
     assert.doesNotMatch(skill, /raw SQL|POST \/aaql\/query|\/aaql\/plan|\/aaql\/execute/i);
   });
 
