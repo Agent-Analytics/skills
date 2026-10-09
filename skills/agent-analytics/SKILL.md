@@ -1,7 +1,7 @@
 ---
 name: agent-analytics
 description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, then recommend the smallest growth action using the official Agent Analytics CLI."
-version: 4.0.34
+version: 4.0.35
 author: dannyshmueli
 license: MIT
 repository: https://github.com/Agent-Analytics/skills
@@ -36,10 +36,10 @@ The CLI is the execution substrate. Start from the user's codebase, project goal
 
 ## Mandatory execution policy
 
-- For live Agent Analytics work, use `npx --yes @agent-analytics/cli@0.5.34 <command>`.
+- For live Agent Analytics work, use `npx --yes @agent-analytics/cli@0.5.35 <command>`.
 - Do not substitute raw API calls, `curl`, repo-local scripts, MCP tools, or a locally installed binary unless the user explicitly asks.
 - Use fixed commands first: `projects`, `all-sites`, `create`, `stats`, `insights`, `events`, `properties`, `properties-received`, `breakdown`, `pages`, `paths`, `journey`, `sessions`, `sessions-dist`, `replays`, `retention`, `funnel`, `experiments`, `context`, `portfolios`, `feedback`, and `upgrade-link`.
-- There is no `report` command in CLI `0.5.34`. Produce the final report yourself from fixed-command outputs instead of calling `report`.
+- There is no `report` command in CLI `0.5.35`. Produce the final report yourself from fixed-command outputs instead of calling `report`.
 - Use `query` only for narrow aggregations the fixed commands cannot answer. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text.
 - Default to browser approval. Use detached login only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the browser callback cannot work.
 - Do not ask for raw API keys or secrets. Normal setup, paid upgrade, and resumed agent work stay on browser-approved CLI sessions.
@@ -51,9 +51,9 @@ The CLI is the execution substrate. Start from the user's codebase, project goal
 For Claude Code, Codex, Cursor, and local CLI runtimes, start with normal browser approval:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.34 login
-npx --yes @agent-analytics/cli@0.5.34 create my-site --domain https://mysite.com
-npx --yes @agent-analytics/cli@0.5.34 events my-site --event <first_useful_event> --days 7 --limit 20
+npx --yes @agent-analytics/cli@0.5.35 login
+npx --yes @agent-analytics/cli@0.5.35 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.35 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
 Do not choose detached login just because the work is happening inside an agent. For Paperclip, OpenClaw, and other issue-based runtimes, run `login --detached`, send the approval URL, wait for the finish code, then complete the printed exchange command.
@@ -62,9 +62,9 @@ In OpenClaw and similar managed runtimes, use persistent auth storage and never 
 
 ```bash
 export AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics"
-npx --yes @agent-analytics/cli@0.5.34 login --detached
-npx --yes @agent-analytics/cli@0.5.34 auth status
-AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics" npx --yes @agent-analytics/cli@0.5.34 projects
+npx --yes @agent-analytics/cli@0.5.35 login --detached
+npx --yes @agent-analytics/cli@0.5.35 auth status
+AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics" npx --yes @agent-analytics/cli@0.5.35 projects
 ```
 
 `--config-dir "$PWD/.openclaw/agent-analytics"` is also valid. Never commit `.openclaw/agent-analytics/config.json`. See `references/setup-auth.md` for more setup detail.
@@ -125,8 +125,8 @@ Use this closed-loop growth recipe for broad questions like where activation dro
 1. Resolve auth and project; account-wide questions start with `projects`.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.34 context get my-site
-npx --yes @agent-analytics/cli@0.5.34 funnel my-site --steps-json '[{"event":"page_view"},{"event":"signup_completed"},{"event":"first_value"}]'
+npx --yes @agent-analytics/cli@0.5.35 context get my-site
+npx --yes @agent-analytics/cli@0.5.35 funnel my-site --steps-json '[{"event":"page_view"},{"event":"signup_completed"},{"event":"first_value"}]'
 ```
 
 2. Read `context get <project>` and treat configured activation events as the activation source of truth. If activation is missing, ask for it or configure it; do not guess silently.
