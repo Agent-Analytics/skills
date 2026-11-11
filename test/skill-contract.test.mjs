@@ -19,6 +19,10 @@ const autoresearchInitScript = readFileSync(
   'utf8',
 );
 const readme = readFileSync(join(root, 'README.md'), 'utf8');
+const growthRecipes = readFileSync(
+  join(root, 'skills/agent-analytics/references/growth-recipes.md'),
+  'utf8',
+);
 
 describe('agent-analytics skill contract', () => {
   it('pins the official CLI to 0.5.37 everywhere', () => {
@@ -262,6 +266,56 @@ describe('agent-analytics skill contract', () => {
     assert.doesNotMatch(skill, /Portfolio\s*(?:→|->)\s*Projects\s*(?:→|->)\s*Surfaces/i);
     assert.match(readme, /classify whether work belongs to a project, a surface inside a project, or a related-project portfolio/i);
     assert.match(readme, /guides\/projects-surfaces-portfolios/i);
+  });
+
+  it('teaches a one-time change read on closed query windows', () => {
+    assert.match(skill, /## Change read/);
+    assert.match(skill, /references\/growth-recipes\.md/);
+    assert.match(skill, /Change read recipe/);
+    assert.match(skill, /`context set` replaces the whole context/);
+    assert.match(skill, /read first and merge/);
+    assert.match(skill, /occurred_at/);
+    assert.match(skill, /Agent Analytics does not schedule or notify/);
+    assert.match(skill, /Grok Bot one-off dated routine/);
+    assert.match(skill, /Claude or Codex scheduler/);
+    assert.match(skill, /`--from` and `--to`/);
+    assert.match(skill, /`date_from` and `date_to`/);
+    assert.match(skill, /analytics_funnel/);
+    assert.match(skill, /`--since` \/ `since`/);
+    assert.match(skill, /analytics_insights/);
+    assert.match(skill, /1d`, `7d`, `14d`, `30d`, or `90d`/);
+    assert.match(skill, /extend once/);
+    assert.match(skill, /at or above the keep threshold/);
+    assert.match(skill, /at or below the revert threshold/);
+    assert.match(skill, /no evidence of a gain/);
+    assert.match(skill, /Before\/after is not causal/);
+    assert.match(skill, /page_view/);
+    assert.match(skill, /200 visitors per window/);
+    assert.match(skill, /20 goal events across both windows/);
+    assert.match(skill, /\+15% relative lift/);
+    assert.match(skill, /-10% relative lift/);
+    assert.match(skill, /Example defaults, not Agent Analytics policy/);
+    assert.match(skill, /the change read recipe/);
+    assert.doesNotMatch(skill, /--date-from|--date-to|--until/);
+
+    assert.match(growthRecipes, /## Change read recipe/);
+    assert.match(growthRecipes, /npx --yes @agent-analytics\/cli@0\.5\.37 query my-site/);
+    assert.match(growthRecipes, /--from 2026-04-01 --to 2026-04-07/);
+    assert.match(growthRecipes, /--from 2026-04-09 --to 2026-04-15/);
+    assert.match(growthRecipes, /--metrics unique_users/);
+    assert.match(growthRecipes, /--metrics event_count/);
+    assert.match(growthRecipes, /--count-mode session_then_user/);
+    assert.match(growthRecipes, /"field":"event","op":"eq","value":"page_view"/);
+    assert.match(growthRecipes, /properties\.utm_source/);
+    assert.match(growthRecipes, /properties\.referrer/);
+    assert.match(growthRecipes, /group_by` accepts `event`, `date`, `user_id`, `session_id`, and `country` only/);
+    assert.match(growthRecipes, /analytics_funnel/);
+    assert.match(growthRecipes, /analytics_breakdown` takes `days` only/);
+    assert.match(growthRecipes, /conversion_window_hours/);
+    assert.match(growthRecipes, /There is no conversion-rate metric/);
+    assert.match(growthRecipes, /Example defaults, not Agent Analytics policy/);
+    assert.match(growthRecipes, /under 10% to over 30%/);
+    assert.doesNotMatch(growthRecipes, /--date-from|--date-to|--until|dateTo|dateFrom/);
   });
 
   it('teaches Autoresearch to use project context as self-improving product memory', () => {

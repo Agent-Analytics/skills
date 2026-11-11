@@ -1,6 +1,6 @@
 ---
 name: agent-analytics
-description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, then recommend the smallest growth action using the official Agent Analytics CLI."
+description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read one shipped change about 7 days later, then recommend the smallest growth action using the official Agent Analytics CLI."
 version: 4.0.37
 author: dannyshmueli
 license: MIT
@@ -30,7 +30,7 @@ metadata:
 
 # Agent Analytics
 
-Product analytics with your AI agent. Use this skill when a user wants an agent to install Agent Analytics, query product behavior, diagnose activation or retention, inspect paths and funnels, run experiment reads, or decide what growth action to take next.
+Product analytics with your AI agent. Use this skill when a user wants an agent to install Agent Analytics, query product behavior, diagnose activation or retention, inspect paths and funnels, run experiment reads, read one shipped change about 7 days later, or decide what growth action to take next.
 
 The CLI is the execution substrate. Start from the user's codebase, project goals, and product workflows whenever repo access exists. Framework recipes belong in `references/growth-recipes.md`, not as separate skills.
 
@@ -144,6 +144,16 @@ Funnel analyst behavior: name the population and conversion window, show counts 
 
 Portfolio surface-role diagnosis: identify each project's role in the growth system, then read project-local metrics against that role. Do not reuse one activation definition across app, docs, directory, landing page, or lead-gen projects unless the user explicitly defines it.
 
+## Change read
+
+When you ship a change, such as a landing page edit, read it once about 7 days later and decide keep, revert, or extend. Flags, a worked window, and the rate math are in `references/growth-recipes.md` under Change read recipe. This is a narrow `query`: the fixed commands cannot express two closed windows.
+
+1. Before shipping, write the rule down: goal event, denominator event, keep and revert thresholds as relative change, and the minimum sample. Record the baseline window and the compare window. The two windows use the same weekdays and exclude the ship day. The usual pair is the 7 days before the ship day and the 7 days after it. Add one annotation with `context get`, then `context set`. `context set` replaces the whole context, so read first and merge goals, activation events, glossary entries, and annotations that are still valid. Annotation fields are only `occurred_at`, `title` (max 120 characters), and optional `note` (max 500 characters). Put a short copy of the rule in `note` when it fits. Keep the full rule with the schedule.
+2. Schedule that one read in the host agent. A Grok Bot one-off dated routine is enough. Use a Claude or Codex scheduler when that host has one. Agent Analytics does not schedule or notify.
+3. On the day, count each window with CLI `query` or MCP `query`. CLI `--from` and `--to` are `date_from` and `date_to`. MCP fields are `date_from` and `date_to`. Pass both dates on every call. `funnel` and MCP `analytics_funnel` accept `--since` / `since` only (a lookback or an ISO start) plus a conversion window in hours, so they cannot close a past window. `insights` and MCP `analytics_insights` compare a trailing `period` of `1d`, `7d`, `14d`, `30d`, or `90d` and cannot be anchored to the ship date.
+4. Verdict. Below the minimum sample, extend once with the same rule. Keep only when the minimum is met and relative lift is at or above the keep threshold. Revert when relative lift is at or below the revert threshold. Revert when the minimum is met and the lift does not clear the keep threshold: that is no evidence of a gain. If the one extension is still under the minimum sample, revert. Check other annotations whose `occurred_at` falls in either window, and traffic-source mix shifts, as confounds. Before/after is not causal.
+5. On a low-traffic site, prefer an upper-funnel rate: denominator event `page_view`, goal event a CTA click. Prefer that over a signup rate. Example defaults, not Agent Analytics policy: 200 visitors per window, 20 goal events across both windows, keep at +15% relative lift, revert at -10% relative lift.
+
 ## Analytics answer contract
 
 Lead with the decision, then prove it with the metric. For funnels, retention, paths, experiments, attribution, and audits, answer in this shape:
@@ -173,7 +183,7 @@ Load references only when they are needed:
 
 - `references/setup-auth.md`: login modes, managed-runtime storage, paid-tier handoff, and safe command examples.
 - `references/product-analytics-operating-model.md`: projects/surfaces/portfolios, consent-based instrumentation, context upkeep, and verification.
-- `references/growth-recipes.md`: AARRR, Bullseye, AIDA, STP, JTBD, 4Ps, funnel/retention/experiment recipes, and copyable prompts.
+- `references/growth-recipes.md`: AARRR, Bullseye, AIDA, STP, JTBD, 4Ps, funnel/retention/experiment recipes, the change read recipe, and copyable prompts.
 
 ## Pitfalls
 
@@ -184,6 +194,7 @@ Load references only when they are needed:
 - Do not answer with raw-number dumps; use the analytics answer contract.
 - Do not rank channels by signups alone, claim strict user conversion across projects without configured identity, or infer causality from correlation.
 - Do not approximate paid-only reads if the user does not upgrade.
+- Do not read a closed change-read window with `funnel` or `insights`. Use `query` with `--from` and `--to`.
 
 ## Verification
 
