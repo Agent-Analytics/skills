@@ -438,7 +438,10 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /has no stack/);
     assert.match(skill, /source filename, and `line`/);
     assert.match(skill, /full UTC timestamp/);
-    assert.match(skill, /When `approximate` is true/);
+    assert.match(skill, /boolean `approximate`/);
+    assert.match(skill, /`caps`, an array of entries from `distinct_triples` and `window_rows`/);
+    assert.match(skill, /list `caps`/);
+    assert.doesNotMatch(skill, /name the cap|the cap the response|singular `cap`/);
     assert.doesNotMatch(skill, /20,000/);
     assert.doesNotMatch(skill, /10,000/);
     assert.doesNotMatch(skill, /--property lcp/);
@@ -463,7 +466,10 @@ describe('agent-analytics skill contract', () => {
     assert.match(growthRecipes, /has no stack/);
     assert.match(growthRecipes, /numeric `line`/);
     assert.match(growthRecipes, /full UTC timestamp/);
-    assert.match(growthRecipes, /When `approximate` is true/);
+    assert.match(growthRecipes, /boolean `approximate`/);
+    assert.match(growthRecipes, /`caps`, an array of entries from `distinct_triples` and `window_rows`/);
+    assert.match(growthRecipes, /list `caps`/);
+    assert.doesNotMatch(growthRecipes, /name the cap|the cap the response|singular `cap`/);
     assert.doesNotMatch(growthRecipes, /10,000/);
     assert.doesNotMatch(growthRecipes, /20,000/);
     assert.match(growthRecipes, /The MCP tool is `errors`/);

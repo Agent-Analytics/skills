@@ -182,13 +182,13 @@ After each ship, run `errors` on the same day as `compare`. `errors` is Pro and 
 npx --yes @agent-analytics/cli@0.5.40 errors my-site --since 7d --new-since 2026-04-08
 ```
 
-That is `errors <project> --since 7d --new-since <ship date>`. `--since` defaults to 7 days and bounds `count`, `users`, `sessions`, and `top_paths`. `--new-since` marks groups first seen on or after the ship. Pass both. The MCP tool is `errors`. Fields: `project`, `since`, `new_since`, optional `until` (defaults to today UTC), and optional `limit` (default 20, maximum 100). A large project returns 200. When `approximate` is true, say the result is approximate and name the cap the response reports.
+That is `errors <project> --since 7d --new-since <ship date>`. `--since` defaults to 7 days and bounds `count`, `users`, `sessions`, and `top_paths`. `--new-since` marks groups first seen on or after the ship. Pass both. The MCP tool is `errors`. Fields: `project`, `since`, `new_since`, optional `until` (defaults to today UTC), and optional `limit` (default 20, maximum 100). Every response includes boolean `approximate`. When `approximate` is true, it also includes `caps`, an array of entries from `distinct_triples` and `window_rows`. Say the counts are approximate and list `caps`.
 
 `new_since` is a `YYYY-MM-DD` date or other annotation text. A date compares `first_seen` to that calendar date. Other text matches project annotations in order: exact title, case-insensitive title, note, then substring. For an annotation, `new_since` is true when `first_seen` is on or after the annotation's full UTC timestamp. The group field is present only when the parameter is set. `first_seen` and `last_seen` use every stored `$error` for that fingerprint, not only the `--since` window. Zero matches returns 400. More than one match returns 400 and lists `matches` with `occurred_at` and `title`.
 
 `$error` stores `message`, `source`, `line`, and `col`. It has no stack. The fingerprint is the SHA-256 hex of the normalized message (URL query strings and hashes removed, then UUIDs, hex hashes, and numbers replaced), the source filename without a query or hash, and numeric `line`. `col` is not part of the key. Each group includes `fingerprint`, `message` (one raw sample), `source`, `line`, `count`, `users`, `sessions`, `first_seen`, `last_seen`, and `top_paths` (at most 3).
 
-Treat groups with `new_since` true as the ship guardrail. Report them beside `lift`, `raw_lift`, and the window values. When `approximate` is true, say the counts are approximate. They do not replace those numbers.
+Treat groups with `new_since` true as the ship guardrail. Report them beside `lift`, `raw_lift`, and the window values. When `approximate` is true, say the counts are approximate and list `caps`. They do not replace those numbers.
 
 ## Copyable prompt
 
