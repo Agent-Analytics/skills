@@ -94,13 +94,13 @@ Read against the business goal event, not exposure count. Include exposure and c
 
 Use this when the main skill's Change read section applies. `compare` is the read. It is free on all plans and costs one read per call. The response `verdict` is `keep`, `revert`, or `extend`. Do not compute the verdict from rates. Do not start a broad diagnosis with this command.
 
-Pass thresholds as fractions on the nested `rule`. `0.10` = +10% relative lift. `-0.10` = -10% relative lift. Relative lift is `(compare rate - baseline rate) / baseline rate`. Rate is goal events divided by denominator unique users in that window. You pass the fractions. The API applies them.
+Pass thresholds as fractions on the nested `rule`. `0.15` = +15% relative lift. The absolute value of each threshold must be 5 or less. Relative lift is `(compare rate - baseline rate) / baseline rate`. Each window reports `denominator_unique_users`, `goal_converters`, and `rate`. Rate is `goal_converters` divided by `denominator_unique_users`. A user who fires the goal 3 times counts once. You pass the fractions. The API applies them.
 
-`compare` with `--ship-date` reads `--days` before that date and `--days` after it. The ship day is excluded. `--days` is `window_days`: an integer multiple of 7, from 1 to 90. Omitted with `--ship-date`, it defaults to 7. A 7-day read runs on ship day + 8 so the compare window has no partial day. Ship day + 7 sets `guardrails.incomplete_current_day`.
+`compare` with `--ship-date` reads `--days` before that date and `--days` after it. The ship day is excluded. `--days` is `window_days`: an integer multiple of 7, from 1 to 90. Omitted with `--ship-date`, it defaults to 7. Read on ship day + 8 or later so the compare window has no partial day. A window that includes today returns `verdict` `extend` and reason `incomplete_current_day`.
 
 `--denominator` defaults to `page_view`. Do not put `event` in `--filter`. Pass `--goal` and `--denominator`.
 
-CLI flags: `--goal`, `--denominator`, `--ship-date`, `--days`, `--keep-threshold`, `--revert-threshold`, `--min-denominator` (denominator unique users required in each window), `--min-goal-events` (goal events required across both windows), `--filter`, `--json`.
+CLI flags: `--goal`, `--denominator`, `--ship-date`, `--days`, `--keep-threshold`, `--revert-threshold`, `--min-denominator` (denominator unique users required in each window), `--min-goal-events` (goal converters required across both windows), `--filter`, `--json`.
 
 `--keep-threshold`, `--revert-threshold`, `--min-denominator`, and `--min-goal-events` are sent as `rule.keep_threshold`, `rule.revert_threshold`, `rule.min_denominator`, and `rule.min_goal_events`. They are not top-level fields. There is no `min_visitors` field.
 
@@ -115,23 +115,31 @@ At ship time, CLI `annotate` adds one annotation and leaves goals, activation ev
 Worked window, ship day 2026-04-08 excluded. Baseline is 2026-04-01 through 2026-04-07. Compare is 2026-04-09 through 2026-04-15. Read on 2026-04-16, ship day + 8, so the compare window has no partial day. `page_view` and `landing_signup_cta_clicked` below are example event names.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.37 annotate my-site --title "Landing hero rewrite" --note "Host routine holds the rule. Goal landing_signup_cta_clicked / page_view. Windows 2026-04-01..2026-04-07 and 2026-04-09..2026-04-15. Example thresholds: keep 0.15, revert -0.10, 200 denominator unique users per window, 20 goal events across both." --at 2026-04-08T00:00:00.000Z
-npx --yes @agent-analytics/cli@0.5.37 compare my-site --ship-date 2026-04-08 --days 7 --goal landing_signup_cta_clicked --denominator page_view --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
+npx --yes @agent-analytics/cli@0.5.38 annotate my-site --title "Landing hero rewrite" --note "Host routine holds the rule. Goal landing_signup_cta_clicked / page_view. Windows 2026-04-01..2026-04-07 and 2026-04-09..2026-04-15. Example thresholds: keep 0.15, revert -0.10, 200 denominator unique users per window, 20 goal converters across both." --at 2026-04-08T00:00:00.000Z
+npx --yes @agent-analytics/cli@0.5.38 compare my-site --ship-date 2026-04-08 --days 7 --goal landing_signup_cta_clicked --denominator page_view --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
 ```
 
 Explicit windows for the same dates omit `--ship-date` and `--days`:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.37 compare my-site --goal landing_signup_cta_clicked --baseline-from 2026-04-01 --baseline-to 2026-04-07 --compare-from 2026-04-09 --compare-to 2026-04-15 --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
+npx --yes @agent-analytics/cli@0.5.38 compare my-site --goal landing_signup_cta_clicked --baseline-from 2026-04-01 --baseline-to 2026-04-07 --compare-from 2026-04-09 --compare-to 2026-04-15 --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
 ```
 
 On MCP `compare`, send `goal_event` `landing_signup_cta_clicked`, `denominator_event` `page_view`, `ship_date` `2026-04-08`, `window_days` `7`, and nested `rule` with `keep_threshold` `0.15`, `revert_threshold` `-0.10`, `min_denominator` `200`, and `min_goal_events` `20`. Append the ship with MCP `append_project_annotation` and the same `occurred_at`, `title`, and `note`.
 
-`--json` prints the API body: `verdict`, `lift`, a 90% interval, and `guardrails`. Report `verdict`. `guardrails.annotations` and `guardrails.traffic_mix` are confounds. Before/after is not causal.
+`--json` prints the API body: `verdict`, `reason`, `lift`, a 90% interval, and `guardrails`. Report `verdict` and `reason`. Do not compute them.
+
+- `extend` with reason `zero_baseline`: the before rate is 0.
+- `revert`: lift is less than or equal to `revert_threshold`, and the 90% interval is entirely below zero.
+- A noisy drop is `extend` with reason `inconclusive`: lift is at or below the revert threshold, but the interval is not entirely below zero.
+- `keep`: lift is greater than or equal to `keep_threshold`, and the interval low is above 0.
+- Other `extend` reasons: `below_min_sample`, `zero_denominator`, `interval_includes_zero`, `no_evidence_of_gain`, and `incomplete_current_day`.
+
+`guardrails.annotations` and `guardrails.traffic_mix` are confounds. Before/after is not causal.
 
 `context get <project>` returns every annotation. Analytics responses include annotations for the requested range plus one day before and after. Any other annotation with `occurred_at` inside either window is a confound.
 
-Example defaults, not Agent Analytics policy: 200 denominator unique users per window, 20 goal events across both windows, keep at `0.15` (+15% relative lift), revert at `-0.10` (-10% relative lift).
+Example defaults, not Agent Analytics policy: 200 denominator unique users per window, 20 goal converters across both windows, keep threshold `0.15` (+15% relative lift), revert threshold `-0.10` (-10% relative lift).
 
 ## Copyable prompt
 
