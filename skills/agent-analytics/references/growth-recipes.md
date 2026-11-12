@@ -94,30 +94,44 @@ Read against the business goal event, not exposure count. Include exposure and c
 
 Use this when the main skill's Change read section applies. `compare` is the read. It is free on all plans and costs one read per call. The response `verdict` is `keep`, `revert`, or `extend`. Do not compute the verdict from rates. Do not start a broad diagnosis with this command.
 
-Pass thresholds as fractions. `0.10` = +10% relative lift. `-0.10` = -10% relative lift. Relative lift is `(compare rate - baseline rate) / baseline rate`. Rate is goal events divided by denominator visitors in that window. You pass the fractions. The API applies them.
+Pass thresholds as fractions on the nested `rule`. `0.10` = +10% relative lift. `-0.10` = -10% relative lift. Relative lift is `(compare rate - baseline rate) / baseline rate`. Rate is goal events divided by denominator unique users in that window. You pass the fractions. The API applies them.
 
-`compare` reads the 7 days before `--ship-date` and the 7 days after it. The ship day is excluded. One call reads both windows.
+`compare` with `--ship-date` reads `--days` before that date and `--days` after it. The ship day is excluded. `--days` is `window_days`: an integer multiple of 7, from 1 to 90. Omitted with `--ship-date`, it defaults to 7. A 7-day read runs on ship day + 8 so the compare window has no partial day. Ship day + 7 sets `guardrails.incomplete_current_day`.
 
-CLI flags: `--goal`, `--denominator`, `--ship-date`, `--keep`, `--revert`, `--min-visitors` (denominator visitors required in each window), `--min-goal-events` (goal events required across both windows).
+`--denominator` defaults to `page_view`. Do not put `event` in `--filter`. Pass `--goal` and `--denominator`.
 
-MCP `compare` fields: `project`, `goal_event`, `denominator_event`, `ship_date`, `keep_threshold`, `revert_threshold`, `min_visitors`, `min_goal_events`.
+CLI flags: `--goal`, `--denominator`, `--ship-date`, `--days`, `--keep-threshold`, `--revert-threshold`, `--min-denominator` (denominator unique users required in each window), `--min-goal-events` (goal events required across both windows), `--filter`, `--json`.
 
-At ship time, CLI `append-annotation` adds one annotation and leaves goals, activation events, glossary entries, and existing annotations in place. Flags: `--occurred-at`, `--title`, `--note`. MCP `append_annotation` fields: `project`, `occurred_at`, `title`, `note`. `note` is optional.
+`--keep-threshold`, `--revert-threshold`, `--min-denominator`, and `--min-goal-events` are sent as `rule.keep_threshold`, `rule.revert_threshold`, `rule.min_denominator`, and `rule.min_goal_events`. They are not top-level fields. There is no `min_visitors` field.
+
+Or pass explicit windows and omit `--ship-date` and `--days`: `--baseline-from`, `--baseline-to`, `--compare-from`, `--compare-to`. Each window is `date_from` and `date_to`. Do not combine explicit windows with `--ship-date` or `--days`.
+
+MCP `compare` fields: `project`, `goal_event`, optional `denominator_event` (default `page_view`), `filters`, and either `ship_date` plus `window_days` or `baseline` and `compare` windows (`date_from`, `date_to`). Optional nested `rule`: `keep_threshold`, `revert_threshold`, `min_denominator`, `min_goal_events`. Thresholds are not top-level.
+
+At ship time, CLI `annotate` adds one annotation and leaves goals, activation events, glossary entries, and existing annotations in place. Flags: `--title` (max 120 characters), optional `--note` (max 500 characters), optional `--at` (ISO-8601 `occurred_at`; omitted, it defaults to now). MCP `append_project_annotation` fields: `project`, `occurred_at`, `title`, `note`. The same `occurred_at` and `title` returns `appended: false` and does not replace the stored note. The cap is 100 annotations.
 
 `funnel` and MCP `analytics_funnel` take `--since` / `since` and a conversion window in hours (`--window` / `conversion_window_hours`). They have no end date. `insights` and MCP `analytics_insights` take `--period` / `period`: `1d`, `7d`, `14d`, `30d`, `90d`. They cannot be anchored to the ship date. Do not use `query` for this read.
 
 Worked window, ship day 2026-04-08 excluded. Baseline is 2026-04-01 through 2026-04-07. Compare is 2026-04-09 through 2026-04-15. Read on 2026-04-16, ship day + 8, so the compare window has no partial day. `page_view` and `landing_signup_cta_clicked` below are example event names.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.37 append-annotation my-site --occurred-at 2026-04-08T00:00:00.000Z --title "Landing hero rewrite" --note "Host routine holds the rule. Goal landing_signup_cta_clicked / page_view. Windows 2026-04-01..2026-04-07 and 2026-04-09..2026-04-15. Example thresholds: keep 0.15, revert -0.10, 200 visitors per window, 20 goal events across both."
-npx --yes @agent-analytics/cli@0.5.37 compare my-site --goal landing_signup_cta_clicked --denominator page_view --ship-date 2026-04-08 --keep 0.15 --revert -0.10 --min-visitors 200 --min-goal-events 20
+npx --yes @agent-analytics/cli@0.5.37 annotate my-site --title "Landing hero rewrite" --note "Host routine holds the rule. Goal landing_signup_cta_clicked / page_view. Windows 2026-04-01..2026-04-07 and 2026-04-09..2026-04-15. Example thresholds: keep 0.15, revert -0.10, 200 denominator unique users per window, 20 goal events across both." --at 2026-04-08T00:00:00.000Z
+npx --yes @agent-analytics/cli@0.5.37 compare my-site --ship-date 2026-04-08 --days 7 --goal landing_signup_cta_clicked --denominator page_view --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
 ```
 
-On MCP `compare`, send `goal_event` `landing_signup_cta_clicked`, `denominator_event` `page_view`, `ship_date` `2026-04-08`, `keep_threshold` `0.15`, `revert_threshold` `-0.10`, `min_visitors` `200`, and `min_goal_events` `20`. Append the ship with MCP `append_annotation` and the same `occurred_at`, `title`, and `note`.
+Explicit windows for the same dates omit `--ship-date` and `--days`:
 
-`context get <project>` returns every annotation. Analytics responses include annotations for the requested range plus one day before and after. Any other annotation with `occurred_at` inside either window is a confound. A shift in traffic source can confound the read as well. Before/after is not causal.
+```bash
+npx --yes @agent-analytics/cli@0.5.37 compare my-site --goal landing_signup_cta_clicked --baseline-from 2026-04-01 --baseline-to 2026-04-07 --compare-from 2026-04-09 --compare-to 2026-04-15 --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
+```
 
-Example defaults, not Agent Analytics policy: 200 visitors per window, 20 goal events across both windows, keep at `0.15` (+15% relative lift), revert at `-0.10` (-10% relative lift).
+On MCP `compare`, send `goal_event` `landing_signup_cta_clicked`, `denominator_event` `page_view`, `ship_date` `2026-04-08`, `window_days` `7`, and nested `rule` with `keep_threshold` `0.15`, `revert_threshold` `-0.10`, `min_denominator` `200`, and `min_goal_events` `20`. Append the ship with MCP `append_project_annotation` and the same `occurred_at`, `title`, and `note`.
+
+`--json` prints the API body: `verdict`, `lift`, a 90% interval, and `guardrails`. Report `verdict`. `guardrails.annotations` and `guardrails.traffic_mix` are confounds. Before/after is not causal.
+
+`context get <project>` returns every annotation. Analytics responses include annotations for the requested range plus one day before and after. Any other annotation with `occurred_at` inside either window is a confound.
+
+Example defaults, not Agent Analytics policy: 200 denominator unique users per window, 20 goal events across both windows, keep at `0.15` (+15% relative lift), revert at `-0.10` (-10% relative lift).
 
 ## Copyable prompt
 
