@@ -36,13 +36,14 @@ Use it when you want an agent to:
 - treat the base tracker snippet as the start of instrumentation, not the full instrumentation plan
 - add only meaningful custom events tied to this repo's product workflows and explain what each event enables
 - avoid custom duplicates for automatic tracker signals such as page views, paths, referrers, UTMs, sessions, device/browser, country, and first-touch attribution
-- use tracker capabilities deliberately for named CTAs, signup intent, pricing interactions, checkout steps, install/setup progress, activation milestones, `data-aa-event`, `data-aa-impression`, `window.aa.track(...)`, server-side tracking, and optional scroll depth, forms, downloads, vitals, errors, performance, and SPA tracking only when they unlock a concrete decision
+- use tracker capabilities deliberately for named CTAs, signup intent, pricing interactions, checkout steps, install/setup progress, activation milestones, `data-aa-event`, `data-aa-impression`, `window.aa.track(...)`, server-side tracking, and optional scroll depth, forms, downloads, errors, performance, and SPA tracking only when they unlock a concrete decision. Default install snippets include `data-track-vitals="true"`
 - verify the first useful event after setup
 - read and maintain compact Project Context: goals, activation events, event-name glossary entries, and date annotations for major landing page, pricing, onboarding, feature, release, or experiment changes
 - configure cross-project identity stitching only when intentional, using both tracker `data-link-domains` and `portfolios create/update`
 - answer product analytics questions with a decision, metric definition, evidence, caveat, and one bounded next action
-- read Pro numeric aggregations with `query`, such as p75 of `cwv_lcp` (`--metrics p75 --property cwv_lcp`) or sum of `revenue` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`. Check `properties_received` for the event that carries the key first. The stock tracker sends `$web_vitals` only with `data-track-vitals`. Some sites put `cwv_*` on `page_view`. `n` of 0 means that event is wrong
-- read a shipped change with free `compare` on ship day + 8, pass `metric` `p75(cwv_lcp)`, `--metric-event` from `properties_received`, and `better=lower`, report `lift`, `raw_lift`, and window `value` (`extend` / `no_interval_for_metric` is not a keep or revert), and run Pro `errors <project> --since 7d --new-since <ship date>` beside that compare
+- read Web Vitals or page speed with the Pro vitals read first: CLI `vitals`, MCP `web_vitals`, API `POST /vitals`. p75 is the headline. Hosted stores `cwv_*` on `page_view`. Self-hosted core stores `$web_vitals`. `cwv_pass` is true when LCP, INP, and CLS p75 are all good
+- read Pro numeric aggregations with `query`, such as sum of `revenue` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`. For a custom property, check `properties_received` for the event that carries the key
+- read a shipped change with free `compare` on ship day + 8, pass `metric` `p75(cwv_lcp)`, `--metric-event page_view` on hosted, and `better=lower`, report `lift`, `raw_lift`, and window `value` (`extend` / `no_interval_for_metric` is not a keep or revert), and run Pro `errors <project> --since 7d --new-since <ship date>` beside that compare
 
 Copyable setup task:
 
@@ -53,9 +54,9 @@ Set up Agent Analytics for this project. If browser approval is needed, open it 
 Use normal browser approval first in Claude Code, Codex, Cursor, and local CLI runtimes:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 login
-npx --yes @agent-analytics/cli@0.5.40 create my-site --domain https://mysite.com
-npx --yes @agent-analytics/cli@0.5.40 events my-site --event <first_useful_event> --days 7 --limit 20
+npx --yes @agent-analytics/cli@0.5.41 login
+npx --yes @agent-analytics/cli@0.5.41 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.41 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
 Use `login --detached` only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the local browser callback cannot work.

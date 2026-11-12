@@ -1,7 +1,7 @@
 ---
 name: agent-analytics
-description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read numeric property metrics such as p75 of cwv_lcp or sum of revenue, read one shipped change on ship day + 8 with compare (metric, metric_event, and better=lower for vitals) plus an errors guardrail, then recommend the smallest growth action using the official Agent Analytics CLI."
-version: 4.0.37
+description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read Web Vitals or page speed with the Pro vitals read (p75 headline, rating, and cwv_pass), read numeric property metrics such as sum of revenue, read one shipped change on ship day + 8 with compare (metric, metric_event page_view, and better=lower for vitals) plus an errors guardrail, then recommend the smallest growth action using the official Agent Analytics CLI."
+version: 4.0.38
 author: dannyshmueli
 license: MIT
 repository: https://github.com/Agent-Analytics/skills
@@ -30,17 +30,17 @@ metadata:
 
 # Agent Analytics
 
-Product analytics with your AI agent. Use this skill when a user wants an agent to install Agent Analytics, query product behavior, diagnose activation or retention, inspect paths and funnels, run experiment reads, read numeric property metrics, read one shipped change on ship day + 8, check new errors since that ship, or decide what growth action to take next.
+Product analytics with your AI agent. Use this skill when a user wants an agent to install Agent Analytics, query product behavior, diagnose activation or retention, inspect paths and funnels, run experiment reads, read Web Vitals or page speed, read numeric property metrics, read one shipped change on ship day + 8, check new errors since that ship, or decide what growth action to take next.
 
 The CLI is the execution substrate. Start from the user's codebase, project goals, and product workflows whenever repo access exists. Framework recipes belong in `references/growth-recipes.md`, not as separate skills.
 
 ## Mandatory execution policy
 
-- For live Agent Analytics work, use `npx --yes @agent-analytics/cli@0.5.40 <command>`.
+- For live Agent Analytics work, use `npx --yes @agent-analytics/cli@0.5.41 <command>`.
 - Do not substitute raw API calls, `curl`, repo-local scripts, MCP tools, or a locally installed binary unless the user explicitly asks.
-- Use fixed commands first: `projects`, `all-sites`, `create`, `stats`, `insights`, `events`, `properties`, `properties-received`, `breakdown`, `pages`, `paths`, `journey`, `sessions`, `sessions-dist`, `replays`, `retention`, `funnel`, `experiments`, `context`, `compare`, `annotate`, `errors`, `portfolios`, `feedback`, and `upgrade-link`.
-- There is no `report` command in CLI `0.5.40`. Produce the final report yourself from fixed-command outputs instead of calling `report`.
-- Use `query` only for narrow aggregations the fixed commands cannot answer, including Pro numeric metrics `sum`, `avg`, `p50`, `p75`, and `p95` with `--property`. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text. The shipped-change read is `compare`, which is free on all plans and costs one read per call. `compare` with `metric` stays free. The `errors` read is Pro and costs one read per call.
+- Use fixed commands first: `projects`, `all-sites`, `create`, `stats`, `insights`, `events`, `properties`, `properties-received`, `breakdown`, `pages`, `paths`, `journey`, `sessions`, `sessions-dist`, `replays`, `retention`, `funnel`, `experiments`, `context`, `compare`, `annotate`, `errors`, `vitals`, `portfolios`, `feedback`, and `upgrade-link`.
+- There is no `report` command in CLI `0.5.41`. Produce the final report yourself from fixed-command outputs instead of calling `report`.
+- For any Web Vitals or page speed question, the first read is the vitals read. CLI `vitals`, MCP `web_vitals`, and API `POST /vitals` are that read. It is Pro and costs one read per call. Use `query` only for narrow aggregations the fixed commands cannot answer, including Pro numeric metrics `sum`, `avg`, `p50`, `p75`, and `p95` with `--property`. Do not start a vitals question with `query`. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text. The shipped-change read is `compare`, which is free on all plans and costs one read per call. `compare` with `metric` stays free. The `errors` read is Pro and costs one read per call.
 - Default to browser approval. Use detached login only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the browser callback cannot work.
 - Do not ask for raw API keys or secrets. Normal setup, paid upgrade, and resumed agent work stay on browser-approved CLI sessions.
 - If the CLI returns `PRO_REQUIRED` or a free-tier read cap, explain the blocked answer, run `upgrade-link --detached`, send the dashboard handoff, run `whoami` after upgrade, then rerun the blocked command. Use `upgrade-link --wait` only when polling is intentionally desired. The dashboard page first confirms the same account as the CLI. Keep the full retry command and private analysis context in the agent session; browser links use a fixed reason and omit custom commands.
@@ -51,9 +51,9 @@ The CLI is the execution substrate. Start from the user's codebase, project goal
 For Claude Code, Codex, Cursor, and local CLI runtimes, start with normal browser approval:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 login
-npx --yes @agent-analytics/cli@0.5.40 create my-site --domain https://mysite.com
-npx --yes @agent-analytics/cli@0.5.40 events my-site --event <first_useful_event> --days 7 --limit 20
+npx --yes @agent-analytics/cli@0.5.41 login
+npx --yes @agent-analytics/cli@0.5.41 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.41 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
 Do not choose detached login just because the work is happening inside an agent. For Paperclip, OpenClaw, and other issue-based runtimes, run `login --detached`, send the approval URL, wait for the finish code, then complete the printed exchange command.
@@ -62,9 +62,9 @@ In OpenClaw and similar managed runtimes, use persistent auth storage and never 
 
 ```bash
 export AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics"
-npx --yes @agent-analytics/cli@0.5.40 login --detached
-npx --yes @agent-analytics/cli@0.5.40 auth status
-AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics" npx --yes @agent-analytics/cli@0.5.40 projects
+npx --yes @agent-analytics/cli@0.5.41 login --detached
+npx --yes @agent-analytics/cli@0.5.41 auth status
+AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics" npx --yes @agent-analytics/cli@0.5.41 projects
 ```
 
 `--config-dir "$PWD/.openclaw/agent-analytics"` is also valid. Never commit `.openclaw/agent-analytics/config.json`. See `references/setup-auth.md` for more setup detail.
@@ -95,10 +95,10 @@ Setup order:
 3. Inspect routes, forms, CTA handlers, auth/setup/checkout flows, existing analytics calls, server-side durable outcomes, and tests when repo access exists.
 4. Login if needed.
 5. Create or identify the project with `create <project> --domain <origin>` or `projects`; `--domain` is a setup origin, not the project identity.
-6. Add the exact tracking snippet returned for that project. Treat the base tracker snippet as the start of instrumentation, not the full instrumentation plan.
+6. Add the exact tracking snippet returned for that project. Default install snippets include `data-track-vitals="true"`. Keep that attribute. `data-track-vitals="false"` is explicit off. Treat the base tracker snippet as the start of instrumentation, not the full instrumentation plan.
 7. Add the smallest named set of meaningful events and tracker opt-ins needed for the user's confirmed goals.
 8. Prefer named CTA clicks, signup intent, pricing interactions, checkout progress or completion, install/setup steps, activation milestones, and durable server-side outcome events such as `signup_completed`, `subscription_started`, `install_completed`, `project_created`, or `first_event_received`.
-9. Map needs to tracker capabilities: `data-aa-event`, `data-aa-impression`, `window.aa.track(...)`, server-side tracking, `aa.identify(...)`, and `aa.set(...)`. Use scroll depth, form tracking, downloads, vitals/errors/performance, and SPA tracking only when they unlock a concrete growth decision.
+9. Map needs to tracker capabilities: `data-aa-event`, `data-aa-impression`, `window.aa.track(...)`, server-side tracking, `aa.identify(...)`, and `aa.set(...)`. The default snippet includes `data-track-vitals="true"`. Use scroll depth, form tracking, downloads, errors, performance, and SPA tracking only when they unlock a concrete growth decision.
 10. Do not add duplicate custom events for automatic signals: page views, paths, referrers, UTMs, sessions, days since first visit, first-touch attribution, device/browser fields, or country.
 11. Explain what each event enables, verify the first useful event with `events <project>`, and summarize what the installed events now let the user's agent answer.
 
@@ -125,8 +125,8 @@ Use this closed-loop growth recipe for broad questions like where activation dro
 1. Resolve auth and project; account-wide questions start with `projects`.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 context get my-site
-npx --yes @agent-analytics/cli@0.5.40 funnel my-site --steps-json '[{"event":"page_view"},{"event":"signup_completed"},{"event":"first_value"}]'
+npx --yes @agent-analytics/cli@0.5.41 context get my-site
+npx --yes @agent-analytics/cli@0.5.41 funnel my-site --steps-json '[{"event":"page_view"},{"event":"signup_completed"},{"event":"first_value"}]'
 ```
 
 2. Read `context get <project>` and treat configured activation events as the activation source of truth. If activation is missing, ask for it or configure it; do not guess silently.
@@ -144,21 +144,51 @@ Funnel analyst behavior: name the population and conversion window, show counts 
 
 Portfolio surface-role diagnosis: identify each project's role in the growth system, then read project-local metrics against that role. Do not reuse one activation definition across app, docs, directory, landing page, or lead-gen projects unless the user explicitly defines it.
 
-## Numeric property metrics
+## Web Vitals
 
-Use `query` for a numeric property the fixed commands cannot aggregate. Metrics are `sum`, `avg`, `p50`, `p75`, and `p95`. `--property` is required with any of those metrics. The key must match `^[A-Za-z0-9_]+$` and be at most 128 characters. A missing property returns 400 `MISSING_FIELDS`. An invalid key returns 400 `INVALID_PROPERTY_KEY`. Only JSON numbers are aggregated. Numeric strings, booleans, nulls, and missing keys are skipped. Each row returns the metric you asked for, `n` (values used), and `skipped` (values ignored). `percentile_method` is `nearest_rank` when a percentile is requested and null for `sum` or `avg` only. Nearest-rank sorts ascending, breaks ties by event id, and picks rank `ceil(p/100 * n)`. Existing event filters, date ranges, filters, and `group_by` still apply. These aggregations are Pro, with the same gate as other `query` calls. A free account gets 403 `PRO_REQUIRED` and the blocked call is not metered. If the CLI returns `PRO_REQUIRED`, use the paid-tier handoff, then rerun the command.
-
-Before this query, run `properties-received <project>` (MCP `properties_received`) and filter to the event that carries the key. The stock tracker sends `$web_vitals` only with `data-track-vitals`. Some sites put `cwv_*` keys, including `cwv_lcp`, on `page_view`. `n` of 0 means that event is wrong.
+For any Web Vitals or page speed question, the first read is the vitals read. CLI: `vitals <project> [--days N] [--from] [--to] [--by device|path] [--limit N] [--json]`. MCP: `web_vitals`. API: `POST /vitals` (GET with the same query params is ok). Args: `project`, `days`, `date_from`, `date_to`, `group_by` (`device` or `path`), `limit` (default 10, max 20). The event is fixed to `page_view`. It is Pro and costs one read per call. A free account gets 403 `PRO_REQUIRED` and that blocked call is not metered. Do not start this question with `query`. A shipped-change before/after still uses free `compare`.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 properties-received my-site
-npx --yes @agent-analytics/cli@0.5.40 query my-site --metrics p75 --property cwv_lcp --filter '[{"field":"event","op":"eq","value":"<event>"}]'
+npx --yes @agent-analytics/cli@0.5.41 vitals my-site --days 7
+npx --yes @agent-analytics/cli@0.5.41 vitals my-site --days 7 --by device
+npx --yes @agent-analytics/cli@0.5.41 vitals my-site --days 7 --by path --limit 10
 ```
+
+p75 is the headline (`percentile` is `p75`, `percentile_method` is `nearest_rank`). Report each metric as p75 with its unit, `rating`, `share`, and `n`. `skipped` counts page views in the group that lack that vital: no paint on that view, no interaction for INP, or an unsupported entry type. Report `n` and `skipped` as returned. Do not add a sample-size cutoff.
+
+Rating uses the web.dev thresholds at <https://web.dev/articles/vitals>. A value <= `good_max` is `good`. A value > `poor_min` is `poor`. Otherwise the rating is `needs-improvement`. The same rule rates each load for `share` and rates the p75. `share` fractions run from 0 to 1 with 3 decimals, under `good`, `needs_improvement`, and `poor`.
+
+| Metric | Key | Unit | good_max | poor_min |
+| --- | --- | --- | --- | --- |
+| LCP | `cwv_lcp` | ms | 2500 | 4000 |
+| INP | `cwv_inp` | ms | 200 | 500 |
+| CLS | `cwv_cls` | unitless | 0.1 | 0.25 |
+| FCP | `cwv_fcp` | ms | 1800 | 3000 |
+| TTFB | `cwv_ttfb` | ms | 800 | 1800 |
+
+`cwv_pass` uses only LCP, INP, and CLS. It is true when those p75 ratings are all `good`. If INP `n` is 0, decide on LCP and CLS. It is null when LCP `n` is 0 or CLS `n` is 0.
+
+`group_by` `device` (CLI `--by device`) returns `mobile`, `tablet`, and `desktop`. `group_by` `path` (CLI `--by path`) returns the top `limit` paths by `n`, sorted by worst LCP p75. With no group, `group` is null.
+
+`top_poor_targets` lists up to 5 `{target, count}` selectors among poor loads. LCP, INP, and CLS use `cwv_lcp_target`, `cwv_inp_target`, and `cwv_cls_target`. A target is a CSS selector, at most 200 characters, with no text content and no URLs. FCP and TTFB return `[]`.
+
+CLS is collected only in Chromium, where `layout-shift` is supported. The key is omitted otherwise, so unsupported browsers do not send a false zero. LCP and INP are also collected in Firefox and Safari. `cwv_ttfb` is `responseStart - max(activationStart, 0)` from navigation start, in ms. `perf_ttfb` under `data-track-performance` is a different field and stays unchanged.
+
+Hosted stores `cwv_*` on `page_view`. Self-hosted core stores `$web_vitals`. Read hosted vitals from `page_view`. Default install snippets include `data-track-vitals="true"`. `data-track-vitals="false"` is explicit off. Every response includes boolean `approximate`. When `approximate` is true, say the read is approximate.
+
+On hosted, a shipped LCP change uses `compare` with `--metric 'p75(cwv_lcp)' --metric-event page_view --better lower`.
+
+## Numeric property metrics
+
+Use `query` for a numeric property the fixed commands cannot aggregate. Web Vitals and page speed use the vitals read above. Metrics are `sum`, `avg`, `p50`, `p75`, and `p95`. `--property` is required with any of those metrics. The key must match `^[A-Za-z0-9_]+$` and be at most 128 characters. A missing property returns 400 `MISSING_FIELDS`. An invalid key returns 400 `INVALID_PROPERTY_KEY`. Only JSON numbers are aggregated. Numeric strings, booleans, nulls, and missing keys are skipped. Each row returns the metric you asked for, `n` (values used), and `skipped` (values ignored). `percentile_method` is `nearest_rank` when a percentile is requested and null for `sum` or `avg` only. Nearest-rank sorts ascending, breaks ties by event id, and picks rank `ceil(p/100 * n)`. Existing event filters, date ranges, filters, and `group_by` still apply. These aggregations are Pro, with the same gate as other `query` calls. A free account gets 403 `PRO_REQUIRED` and the blocked call is not metered. If the CLI returns `PRO_REQUIRED`, use the paid-tier handoff, then rerun the command.
+
+Before this query, run `properties-received <project>` (MCP `properties_received`) and filter to the event that carries the key. That lookup is for custom properties. Hosted `cwv_*` keys live on `page_view`. Self-hosted core stores `$web_vitals`.
 
 Revenue example. Record purchases as `aa.track('purchase', { revenue: 29, currency: 'USD' })`, then sum `revenue`. `29` and `USD` are the public example.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 query my-site --metrics sum --property revenue --filter '[{"field":"event","op":"eq","value":"purchase"}]'
+npx --yes @agent-analytics/cli@0.5.41 properties-received my-site
+npx --yes @agent-analytics/cli@0.5.41 query my-site --metrics sum --property revenue --filter '[{"field":"event","op":"eq","value":"purchase"}]'
 ```
 
 MCP `query` takes `metrics`, `property`, and `filters`. Do not start broad growth diagnosis with `query`. Do not read a shipped change with `query`. Use `compare` for that read. `compare` with `metric` stays free.
@@ -174,7 +204,7 @@ When you ship a change, such as a landing page edit, read it once on ship day + 
 5. If the compare window may contain 404 or one-hit bot page views, for example right after sharing new URLs, rerun `compare` with `--exclude-denominator "properties.title=<404 page title>"` before trusting a revert. MCP `compare` sends that exclusion as `denominator_filters`: `[{"field":"properties.title","op":"neq","value":"<404 page title>"}]`. It applies only to the denominator.
 6. Name any other annotation whose `occurred_at` falls in either window. Those are confounds. A shift in traffic source can confound the read as well. Before/after is not causal.
 7. On a low-traffic site, prefer an upper-funnel rate: denominator event `page_view`, goal event a CTA click. Prefer that over a signup rate. Example defaults, not Agent Analytics policy: 200 denominator unique users per window, 20 goal converters across both windows, keep threshold `0.15` (+15% relative lift), revert threshold `-0.10` (-10% relative lift).
-8. When the shipped change is about a numeric property, call the same free `compare` with `--metric` set to `sum(<prop>)`, `avg(<prop>)`, `p50(<prop>)`, `p75(<prop>)`, or `p95(<prop>)`. `--metric-event` is the event that carries the property. It defaults to the goal event. Set it when they differ. For LCP, pass `--metric 'p75(cwv_lcp)' --better lower` and set `--metric-event` from `properties_received`. The stock tracker sends `$web_vitals` only with `data-track-vitals`. Some sites put `cwv_*` on `page_view`. `n` of 0 means that event is wrong. Revenue on the `purchase` event from `aa.track('purchase', { revenue: 29, currency: 'USD' })` uses `--metric 'sum(revenue)' --better higher` and can omit `--metric-event`. Default `better` is `higher`. Set `better` to `lower` for `cwv_lcp` and the other Web Vitals properties. The property name does not select the direction. `sum(<prop>)` is the sum per unique denominator user and sets `per_user` to true. `avg` and percentiles set `per_user` to false. v1 returns `interval` null and `interval_method` `"none"`. `lift` is `(compare value - baseline value) / baseline value`, negated when `better` is `lower`. `raw_lift` is that ratio before the negation. `--min-goal-events` counts `n` on `metric_event` across both windows (default 20), not unique converters. Below that minimum, or below `min_denominator` in either window, the verdict is `extend` with reason `below_min_sample`. When `lift` meets `keep_threshold` or `revert_threshold`, the verdict is `extend` with reason `no_interval_for_metric`. When `lift` is between the thresholds, the verdict is `extend` with reason `no_evidence_of_gain`. Report `lift`, `raw_lift`, and each window's `value`, `n`, and `skipped`. `no_interval_for_metric` is not a keep and it is not a revert. Leave `metric` unset to keep the conversion-rate rules in step 4. MCP `compare` fields are `metric`, `metric_event`, and `better`. Worked commands are in the change read recipe.
+8. When the shipped change is about a numeric property, call the same free `compare` with `--metric` set to `sum(<prop>)`, `avg(<prop>)`, `p50(<prop>)`, `p75(<prop>)`, or `p95(<prop>)`. `--metric-event` is the event that carries the property. It defaults to the goal event. Set it when they differ. For hosted LCP, pass `--metric 'p75(cwv_lcp)' --metric-event page_view --better lower`. Hosted stores `cwv_*` on `page_view`. Self-hosted core stores `$web_vitals`, so `metric_event` is `$web_vitals` there. A vitals or page speed question that is not this before/after read uses `vitals` first. Revenue on the `purchase` event from `aa.track('purchase', { revenue: 29, currency: 'USD' })` uses `--metric 'sum(revenue)' --better higher` and can omit `--metric-event`. Default `better` is `higher`. Set `better` to `lower` for `cwv_lcp` and the other Web Vitals properties. The property name does not select the direction. `sum(<prop>)` is the sum per unique denominator user and sets `per_user` to true. `avg` and percentiles set `per_user` to false. v1 returns `interval` null and `interval_method` `"none"`. `lift` is `(compare value - baseline value) / baseline value`, negated when `better` is `lower`. `raw_lift` is that ratio before the negation. `--min-goal-events` counts `n` on `metric_event` across both windows (default 20), not unique converters. Below that minimum, or below `min_denominator` in either window, the verdict is `extend` with reason `below_min_sample`. When `lift` meets `keep_threshold` or `revert_threshold`, the verdict is `extend` with reason `no_interval_for_metric`. When `lift` is between the thresholds, the verdict is `extend` with reason `no_evidence_of_gain`. Report `lift`, `raw_lift`, and each window's `value`, `n`, and `skipped`. `no_interval_for_metric` is not a keep and it is not a revert. Leave `metric` unset to keep the conversion-rate rules in step 4. MCP `compare` fields are `metric`, `metric_event`, and `better`. Worked commands are in the change read recipe.
 9. On that same day, run `errors <project> --since 7d --new-since <ship date>` beside `compare`. The MCP tool is `errors`. A free account gets 403 `PRO_REQUIRED` and that blocked call is not metered. A successful call is one metered read. `$error` stores `message`, `source`, `line`, and `col`, and it has no stack. The fingerprint is the SHA-256 of the normalized message, the source filename, and `line`. `new_since` is a `YYYY-MM-DD` date or annotation text. A date compares `first_seen` to that calendar date. An annotation compares `first_seen` to the annotation's full UTC timestamp. `first_seen` and `last_seen` use every stored `$error` for that fingerprint, not only the `--since` window. Zero annotation matches returns 400. More than one match returns 400 and lists `matches`. Every response includes boolean `approximate`. When `approximate` is true, it also includes `caps`, an array of entries from `distinct_triples` and `window_rows`. Say the counts are approximate and list `caps`. Report groups with `new_since` true next to `lift`, `raw_lift`, and the window values. They do not replace those numbers.
 
 ## Analytics answer contract
@@ -206,7 +236,7 @@ Load references only when they are needed:
 
 - `references/setup-auth.md`: login modes, managed-runtime storage, paid-tier handoff, and safe command examples.
 - `references/product-analytics-operating-model.md`: projects/surfaces/portfolios, consent-based instrumentation, context upkeep, and verification.
-- `references/growth-recipes.md`: AARRR, Bullseye, AIDA, STP, JTBD, 4Ps, funnel/retention/experiment recipes, the change read recipe (including `metric`, `metric_event`, `better=lower` for `cwv_lcp`, `no_interval_for_metric`, and the `errors` guardrail), and copyable prompts.
+- `references/growth-recipes.md`: AARRR, Bullseye, AIDA, STP, JTBD, 4Ps, funnel/retention/experiment recipes, the change read recipe (including `metric`, hosted `metric_event page_view` for `cwv_lcp`, `better=lower`, `no_interval_for_metric`, and the `errors` guardrail), and copyable prompts. Web Vitals thresholds and `cwv_pass` are in the Web Vitals section above.
 
 ## Pitfalls
 
@@ -217,9 +247,10 @@ Load references only when they are needed:
 - Do not answer with raw-number dumps; use the analytics answer contract.
 - Do not rank channels by signups alone, claim strict user conversion across projects without configured identity, or infer causality from correlation.
 - Do not approximate paid-only reads if the user does not upgrade.
-- Do not read a shipped change with `query`, `funnel`, or `insights`. Use `compare`. It is free on all plans and costs one read per call. For a numeric property, pass `metric` on that `compare`, and pass `--metric-event` from `properties_received` when that event is not the goal. For `cwv_lcp`, set `better` to `lower`. `n` of 0 means that event is wrong. Report `lift`, `raw_lift`, and window `value`. Reason `no_interval_for_metric` is not a keep or a revert.
+- Do not read a shipped change with `query`, `funnel`, or `insights`. Use `compare`. It is free on all plans and costs one read per call. For a numeric property, pass `metric` on that `compare`. For hosted `cwv_lcp`, pass `--metric-event page_view` and set `better` to `lower`. Self-hosted core stores `$web_vitals`. For any other vitals or page speed question, call `vitals` first. Report `lift`, `raw_lift`, and window `value`. Reason `no_interval_for_metric` is not a keep or a revert.
+- Do not read hosted Web Vitals from `$web_vitals`. Hosted `cwv_*` keys are on `page_view`.
 - Do not skip `errors` after a ship. Run `errors <project> --since 7d --new-since <ship date>` beside `compare`.
-- Do not treat `query` numeric aggregations or `errors` as free. They are Pro. `compare`, including `compare` with `metric`, stays free.
+- Do not treat `vitals`, `query` numeric aggregations, or `errors` as free. They are Pro. `compare`, including `compare` with `metric`, stays free.
 
 ## Verification
 
@@ -232,3 +263,4 @@ Before finishing setup or analysis:
 - Verify context reads/writes preserve existing durable truth.
 - Verify the final answer follows diagnosis, metric definition, evidence, segment/surface, caveat, and one bounded next action.
 - After a shipped-change read, verify `compare` returned `verdict` and `reason`, and verify `errors` ran with `new_since` set to the ship date.
+- For a vitals or page speed answer, verify it came from the vitals read and reports p75, `rating`, and `cwv_pass`.
