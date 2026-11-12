@@ -415,7 +415,12 @@ describe('agent-analytics skill contract', () => {
 
   it('teaches Pro query aggregations, free compare metrics, and the errors guardrail', () => {
     assert.match(skill, /--metrics p75 --property cwv_lcp/);
+    assert.match(skill, /properties_received/);
+    assert.match(skill, /properties-received my-site/);
+    assert.match(skill, /data-track-vitals/);
     assert.match(skill, /\$web_vitals/);
+    assert.match(skill, /`cwv_\*` keys, including `cwv_lcp`, on `page_view`/);
+    assert.match(skill, /`n` of 0 means that event is wrong/);
     assert.match(skill, /--metrics sum --property revenue/);
     assert.match(skill, /metrics are `sum`, `avg`, `p50`, `p75`, and `p95`/i);
     assert.match(skill, /aa\.track\('purchase', \{ revenue: 29, currency: 'USD' \}\)/);
@@ -425,7 +430,10 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /These aggregations are Pro/);
     assert.match(skill, /`compare` with `metric` stays free/);
     assert.match(skill, /The `errors` read is Pro/);
-    assert.match(skill, /--metric 'p75\(cwv_lcp\)' --metric-event '\$web_vitals' --better lower/);
+    assert.match(skill, /--metric 'p75\(cwv_lcp\)' --better lower/);
+    assert.doesNotMatch(skill, /--metric-event '\$web_vitals'/);
+    assert.doesNotMatch(skill, /"value":"\$web_vitals"/);
+    assert.doesNotMatch(skill, /not on page_view|not a field on `page_view`/);
     assert.match(skill, /--metric 'sum\(revenue\)' --better higher/);
     assert.match(skill, /--metric-event/);
     assert.match(skill, /no_interval_for_metric/);
@@ -450,7 +458,13 @@ describe('agent-analytics skill contract', () => {
     assert.doesNotMatch(skill, /needs Pro/i);
     assert.doesNotMatch(skill, /—|–/);
 
-    assert.match(growthRecipes, /--metric 'p75\(cwv_lcp\)' --metric-event '\$web_vitals' --better lower/);
+    assert.match(growthRecipes, /--metric 'p75\(cwv_lcp\)' --metric-event '<event>' --better lower/);
+    assert.match(growthRecipes, /properties_received/);
+    assert.match(growthRecipes, /data-track-vitals/);
+    assert.match(growthRecipes, /`cwv_\*` keys, including `cwv_lcp`, on `page_view`/);
+    assert.match(growthRecipes, /`n` of 0 means that event is wrong/);
+    assert.doesNotMatch(growthRecipes, /--metric-event '\$web_vitals'/);
+    assert.doesNotMatch(growthRecipes, /not on page_view|not a field on `page_view`/);
     assert.match(growthRecipes, /--metric 'sum\(revenue\)' --better higher/);
     assert.match(growthRecipes, /--metric-event/);
     assert.match(growthRecipes, /metric_event/);
@@ -484,7 +498,10 @@ describe('agent-analytics skill contract', () => {
     assert.doesNotMatch(growthRecipes, /@agent-analytics\/cli@0\.5\.40 query/);
 
     assert.match(autoresearchSkill, /p75\(cwv_lcp\)/);
-    assert.match(autoresearchSkill, /metric_event` `\$web_vitals`/);
+    assert.match(autoresearchSkill, /metric_event` from `properties_received`/);
+    assert.match(autoresearchSkill, /data-track-vitals/);
+    assert.match(autoresearchSkill, /`n` of 0 means that event is wrong/);
+    assert.doesNotMatch(autoresearchSkill, /metric_event` `\$web_vitals`/);
     assert.match(autoresearchSkill, /sum\(revenue\)/);
     assert.match(autoresearchSkill, /better` `lower`/);
     assert.match(autoresearchSkill, /no_interval_for_metric/);
@@ -494,7 +511,12 @@ describe('agent-analytics skill contract', () => {
     assert.match(autoresearchSkill, /Numeric `query` aggregations and `errors` are Pro/);
     assert.doesNotMatch(autoresearchSkill, /p75\(lcp\)/);
     assert.match(readme, /--metrics p75 --property cwv_lcp/);
-    assert.match(readme, /--metric-event '\$web_vitals'/);
+    assert.match(readme, /properties_received/);
+    assert.match(readme, /data-track-vitals/);
+    assert.match(readme, /`cwv_\*` on `page_view`/);
+    assert.match(readme, /`n` of 0 means that event is wrong/);
+    assert.doesNotMatch(readme, /--metric-event '\$web_vitals'/);
+    assert.doesNotMatch(readme, /not on page_view/);
     assert.match(readme, /no_interval_for_metric/);
     assert.match(readme, /errors <project> --since 7d --new-since <ship date>/);
     assert.match(readme, /`compare`, including `compare` with `metric`, stays free on all plans/);

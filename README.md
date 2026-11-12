@@ -41,8 +41,8 @@ Use it when you want an agent to:
 - read and maintain compact Project Context: goals, activation events, event-name glossary entries, and date annotations for major landing page, pricing, onboarding, feature, release, or experiment changes
 - configure cross-project identity stitching only when intentional, using both tracker `data-link-domains` and `portfolios create/update`
 - answer product analytics questions with a decision, metric definition, evidence, caveat, and one bounded next action
-- read Pro numeric aggregations with `query`, such as p75 of `cwv_lcp` on `$web_vitals` (`--metrics p75 --property cwv_lcp`) or sum of `revenue` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`
-- read a shipped change with free `compare` on ship day + 8, pass `metric` `p75(cwv_lcp)`, `--metric-event '$web_vitals'`, and `better=lower`, report `lift`, `raw_lift`, and window `value` (`extend` / `no_interval_for_metric` is not a keep or revert), and run Pro `errors <project> --since 7d --new-since <ship date>` beside that compare
+- read Pro numeric aggregations with `query`, such as p75 of `cwv_lcp` (`--metrics p75 --property cwv_lcp`) or sum of `revenue` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`. Check `properties_received` for the event that carries the key first. The stock tracker sends `$web_vitals` only with `data-track-vitals`. Some sites put `cwv_*` on `page_view`. `n` of 0 means that event is wrong
+- read a shipped change with free `compare` on ship day + 8, pass `metric` `p75(cwv_lcp)`, `--metric-event` from `properties_received`, and `better=lower`, report `lift`, `raw_lift`, and window `value` (`extend` / `no_interval_for_metric` is not a keep or revert), and run Pro `errors <project> --since 7d --new-since <ship date>` beside that compare
 
 Copyable setup task:
 

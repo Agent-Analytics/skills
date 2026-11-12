@@ -149,7 +149,7 @@ Example defaults, not Agent Analytics policy: 200 denominator unique users per w
 
 ## Numeric property compare
 
-Use this when the shipped change should move a numeric property, such as p75 of `cwv_lcp` on `$web_vitals` or sum of `revenue`. `compare` stays free on all plans and still costs one read per call. Leave `metric` unset to keep the conversion-rate read above, including its 90% interval rules and its keep or revert verdict. Do not use `query` for this read.
+Use this when the shipped change should move a numeric property, such as p75 of `cwv_lcp` or sum of `revenue`. `compare` stays free on all plans and still costs one read per call. Leave `metric` unset to keep the conversion-rate read above, including its 90% interval rules and its keep or revert verdict. Do not use `query` for this read.
 
 `--metric` is one of `sum(<prop>)`, `avg(<prop>)`, `p50(<prop>)`, `p75(<prop>)`, or `p95(<prop>)`. `--metric-event` is the event whose property is measured. It defaults to the goal event. Set it when they differ. `--better` is `higher` or `lower`. The default is `higher`. Set `--better lower` for `cwv_lcp` and the other Web Vitals properties. Pass `better` explicitly. The property name does not select the direction.
 
@@ -163,16 +163,17 @@ v1 does not return `keep` or `revert` for a metric compare. When `lift` meets `k
 
 Public shape: baseline `value` 2400 and compare `value` 1200 with `better` `lower` give `raw_lift` -0.5 and `lift` 0.5. If that `lift` meets `keep_threshold` 0.15, `reason` is `no_interval_for_metric` and `verdict` is `extend`.
 
-LCP uses goal event `signup` and metric event `$web_vitals` with property `cwv_lcp`. Revenue uses goal event `purchase` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`, so `metric_event` stays the goal. `29` and `USD` are the public example.
+Before `compare` with `metric`, or a numeric `query`, run `properties-received <project>` (MCP `properties_received`) and use the event that carries the key. The stock tracker sends `$web_vitals` only with `data-track-vitals`. Some sites put `cwv_*` keys, including `cwv_lcp`, on `page_view`. `n` of 0 means that event is wrong. LCP still uses `better` `lower`. Revenue uses goal event `purchase` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`, so `metric_event` stays the goal when `revenue` is on `purchase`. `29` and `USD` are the public example.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 compare my-site --ship-date 2026-04-08 --days 7 --goal signup --metric 'p75(cwv_lcp)' --metric-event '$web_vitals' --better lower --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
+npx --yes @agent-analytics/cli@0.5.40 properties-received my-site
+npx --yes @agent-analytics/cli@0.5.40 compare my-site --ship-date 2026-04-08 --days 7 --goal signup --metric 'p75(cwv_lcp)' --metric-event '<event>' --better lower --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
 npx --yes @agent-analytics/cli@0.5.40 compare my-site --ship-date 2026-04-08 --days 7 --goal purchase --metric 'sum(revenue)' --better higher --denominator page_view --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
 ```
 
-MCP `compare` sends `metric` `p75(cwv_lcp)`, `metric_event` `$web_vitals`, and `better` `lower` for the vitals example, or `metric` `sum(revenue)` and `better` `higher` for the revenue example.
+MCP `compare` sends `metric` `p75(cwv_lcp)`, `metric_event` from `properties_received`, and `better` `lower` for the vitals example, or `metric` `sum(revenue)` and `better` `higher` for the revenue example.
 
-A point-in-time p75 of `cwv_lcp` on `$web_vitals`, outside this before/after read, uses `query` with `--metrics p75 --property cwv_lcp` and an event filter for `$web_vitals`. Those aggregations are Pro.
+A point-in-time p75 of `cwv_lcp`, outside this before/after read, uses `query` with `--metrics p75 --property cwv_lcp` and an event filter for the event `properties_received` shows. `n` of 0 means that event is wrong. Those aggregations are Pro.
 
 ## Errors guardrail
 
