@@ -31,6 +31,8 @@ Good event candidates: named CTA clicks, signup intent, pricing interactions, ch
 
 Use `data-aa-event` for named click intent, `data-aa-impression` for meaningful section exposure, `window.aa.track(...)` for computed client state, server-side tracking for durable outcomes, and identify/set calls after auth. Enable scroll depth, forms, downloads, vitals, errors, performance, or SPA tracking only when tied to a concrete decision.
 
+When vitals are part of the decision, read p75 of `lcp` with `query --metrics p75 --property lcp`. That aggregation is Pro. Record revenue as `aa.track('purchase', { revenue: 29, currency: 'USD' })` and aggregate `revenue` with `sum`. `29` and `USD` are the public example. After a ship, run free `compare` (with `metric` and `better=lower` for `lcp`, `inp`, `cls`, `fcp`, and `ttfb`) and Pro `errors` with `new_since` set to the ship date.
+
 Do not duplicate automatic signals: page views, path, referrer, UTM fields, device/browser, country, sessions, first-touch attribution, or days since first visit.
 
 ## Context upkeep

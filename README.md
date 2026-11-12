@@ -41,6 +41,8 @@ Use it when you want an agent to:
 - read and maintain compact Project Context: goals, activation events, event-name glossary entries, and date annotations for major landing page, pricing, onboarding, feature, release, or experiment changes
 - configure cross-project identity stitching only when intentional, using both tracker `data-link-domains` and `portfolios create/update`
 - answer product analytics questions with a decision, metric definition, evidence, caveat, and one bounded next action
+- read Pro numeric aggregations with `query`, such as p75 of `lcp` (`--metrics p75 --property lcp`) or sum of `revenue` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`
+- read a shipped change with free `compare` on ship day + 8, pass `metric` and `better=lower` for vitals such as `p75(lcp)`, and run Pro `errors <project> --since 7d --new-since <ship date>` beside that compare
 
 Copyable setup task:
 
@@ -51,14 +53,14 @@ Set up Agent Analytics for this project. If browser approval is needed, open it 
 Use normal browser approval first in Claude Code, Codex, Cursor, and local CLI runtimes:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.39 login
-npx --yes @agent-analytics/cli@0.5.39 create my-site --domain https://mysite.com
-npx --yes @agent-analytics/cli@0.5.39 events my-site --event <first_useful_event> --days 7 --limit 20
+npx --yes @agent-analytics/cli@0.5.40 login
+npx --yes @agent-analytics/cli@0.5.40 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.40 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
 Use `login --detached` only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the local browser callback cannot work.
 
-For paid-tier blocks, run the intended command first. If the CLI returns `PRO_REQUIRED` or a free-tier read cap, use the CLI upgrade handoff. The dashboard page first confirms the same account as the CLI, explains that the requested task needs Pro, and then opens payment. The full command and private analysis context stay in the agent session.
+For paid-tier blocks, run the intended command first. If the CLI returns `PRO_REQUIRED` or a free-tier read cap, use the CLI upgrade handoff. The dashboard page first confirms the same account as the CLI, explains that the requested task needs Pro, and then opens payment. The full command and private analysis context stay in the agent session. `query` numeric aggregations and `errors` are Pro. `compare`, including `compare` with `metric`, stays free on all plans.
 
 ### `agent-analytics-autoresearch`
 

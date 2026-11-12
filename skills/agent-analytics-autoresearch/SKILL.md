@@ -129,20 +129,28 @@ The outer loop prevents the LLM panel from becoming the final judge. LLMs genera
 Use the official CLI when collecting live Agent Analytics data:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.39 insights "$PROJECT_SLUG" --period 7d
-npx --yes @agent-analytics/cli@0.5.39 pages "$PROJECT_SLUG" --since 7d
-npx --yes @agent-analytics/cli@0.5.39 funnel "$PROJECT_SLUG" --steps "page_view,$PROXY_EVENT,$PRIMARY_EVENT" --since 7d
-npx --yes @agent-analytics/cli@0.5.39 events "$PROJECT_SLUG" --event "$PROXY_EVENT" --days 7 --limit 50
-npx --yes @agent-analytics/cli@0.5.39 events "$PROJECT_SLUG" --event "$PRIMARY_EVENT" --days 7 --limit 50
-npx --yes @agent-analytics/cli@0.5.39 experiments list "$PROJECT_SLUG"
+npx --yes @agent-analytics/cli@0.5.40 insights "$PROJECT_SLUG" --period 7d
+npx --yes @agent-analytics/cli@0.5.40 pages "$PROJECT_SLUG" --since 7d
+npx --yes @agent-analytics/cli@0.5.40 funnel "$PROJECT_SLUG" --steps "page_view,$PROXY_EVENT,$PRIMARY_EVENT" --since 7d
+npx --yes @agent-analytics/cli@0.5.40 events "$PROJECT_SLUG" --event "$PROXY_EVENT" --days 7 --limit 50
+npx --yes @agent-analytics/cli@0.5.40 events "$PROJECT_SLUG" --event "$PRIMARY_EVENT" --days 7 --limit 50
+npx --yes @agent-analytics/cli@0.5.40 experiments list "$PROJECT_SLUG"
 ```
+
+A post-ship or post-experiment read uses the regular `agent-analytics` skill's change read. `compare` is free. Pass `metric` `p75(lcp)` with `better` `lower` for `lcp`, `inp`, `cls`, `fcp`, and `ttfb`, or `metric` `sum(revenue)` with `better` `higher`. Beside that compare, run:
+
+```bash
+npx --yes @agent-analytics/cli@0.5.40 errors "$PROJECT_SLUG" --since 7d --new-since <ship date>
+```
+
+Numeric `query` aggregations and `errors` are Pro. `compare` stays free. The MCP tool for the guardrail is `errors`.
 
 If login is needed, prefer the regular `agent-analytics` skill's browser approval or detached login guidance.
 
 Before interpreting the snapshot, also read the compact project memory:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.39 context get "$PROJECT_SLUG"
+npx --yes @agent-analytics/cli@0.5.40 context get "$PROJECT_SLUG"
 ```
 
 If the autoresearch run reveals durable product truth that should guide future analytics, use the regular `agent-analytics` skill's project context workflow to read the existing context, merge the compact update, and write it back. Do not store raw round notes or time-bound metric values as project context.

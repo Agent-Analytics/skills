@@ -140,7 +140,7 @@ Run this section only if the user explicitly asks you to implement or wire the a
    - winning and losing variants
    - primary metric movement
    - proxy metric movement
-   - guardrail movement
+   - guardrail movement, including new `$error` groups from Agent Analytics `errors` with `new_since` set to the ship date when that is the evidence source
    - screenshots or changed-copy notes
    - data limitations
 6. Start the next autoresearch loop from that measured evidence.
