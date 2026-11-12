@@ -23,24 +23,33 @@ const growthRecipes = readFileSync(
   join(root, 'skills/agent-analytics/references/growth-recipes.md'),
   'utf8',
 );
+const setupAuth = readFileSync(
+  join(root, 'skills/agent-analytics/references/setup-auth.md'),
+  'utf8',
+);
 
 describe('agent-analytics skill contract', () => {
-  it('pins the official CLI to 0.5.39 everywhere', () => {
+  it('pins the official CLI to 0.5.40 everywhere', () => {
     assert.match(skill, /version: 4\.0\.37/);
-    assert.ok(skill.includes('npx --yes @agent-analytics/cli@0.5.39'));
-    assert.ok(readme.includes('npx --yes @agent-analytics/cli@0.5.39'));
+    assert.ok(skill.includes('npx --yes @agent-analytics/cli@0.5.40'));
+    assert.ok(readme.includes('npx --yes @agent-analytics/cli@0.5.40'));
     assert.match(autoresearchSkill, /version: 1\.0\.12/);
-    assert.ok(autoresearchSkill.includes('npx --yes @agent-analytics/cli@0.5.39'));
-    assert.ok(autoresearchBriefTemplate.includes('npx --yes @agent-analytics/cli@0.5.39'));
-    assert.ok(autoresearchSnapshotScript.includes('npx --yes @agent-analytics/cli@0.5.39'));
+    assert.ok(autoresearchSkill.includes('npx --yes @agent-analytics/cli@0.5.40'));
+    assert.ok(autoresearchBriefTemplate.includes('npx --yes @agent-analytics/cli@0.5.40'));
+    assert.ok(autoresearchSnapshotScript.includes('npx --yes @agent-analytics/cli@0.5.40'));
+    assert.ok(growthRecipes.includes('npx --yes @agent-analytics/cli@0.5.40'));
+    assert.ok(setupAuth.includes('npx --yes @agent-analytics/cli@0.5.40'));
     for (const content of [
       skill,
       readme,
       autoresearchSkill,
       autoresearchBriefTemplate,
       autoresearchSnapshotScript,
+      growthRecipes,
+      setupAuth,
     ]) {
       assert.doesNotMatch(content, /@agent-analytics\/cli@0\.5\.25/);
+      assert.doesNotMatch(content, /@agent-analytics\/cli@0\.5\.39/);
     }
     assert.equal(/@agent-analytics\/cli@0\.5\.(12|13|14|15|16|17|18|19)/.test(skill), false);
     assert.equal(/@agent-analytics\/cli@0\.5\.(12|13|14|15|16|17|18|19)/.test(readme), false);
@@ -98,7 +107,7 @@ describe('agent-analytics skill contract', () => {
 
   it('keeps local runtimes on browser login and detached as the fallback path', () => {
     assert.match(skill, /Claude Code, Codex, Cursor, and local CLI runtimes/i);
-    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.39 login/i);
+    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.40 login/i);
     assert.match(skill, /do not choose detached login just because/i);
     assert.match(skill, /Paperclip, OpenClaw, and other issue-based runtimes/i);
     assert.match(skill, /finish code/i);
@@ -237,11 +246,11 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /Recommend a readiness fix instead of an experiment/i);
     assert.match(skill, /Read experiments against the business goal event, not exposure count/i);
     assert.match(skill, /diagnosis, metric definition, evidence, segment\/surface, caveat, and one bounded next action/i);
-    assert.match(skill, /There is no `report` command in CLI `0\.5\.39`/i);
+    assert.match(skill, /There is no `report` command in CLI `0\.5\.40`/i);
     assert.match(skill, /Produce the final report yourself from fixed-command outputs/i);
     assert.doesNotMatch(skill, /Start with .*`report`/i);
-    assert.doesNotMatch(skill, /npx --yes @agent-analytics\/cli@0\.5\.39 report/i);
-    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.39/);
+    assert.doesNotMatch(skill, /npx --yes @agent-analytics\/cli@0\.5\.40 report/i);
+    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.40/);
     assert.doesNotMatch(skill, /raw SQL|POST \/aaql\/query|\/aaql\/plan|\/aaql\/execute/i);
   });
 
@@ -348,8 +357,8 @@ describe('agent-analytics skill contract', () => {
     assert.match(growthRecipes, /no_evidence_of_gain/);
     assert.match(growthRecipes, /20 goal converters across both windows/);
     assert.doesNotMatch(growthRecipes, /revert at `-0\.10`|10% drop alone|drop alone means revert|goal_event_count/);
-    assert.match(growthRecipes, /npx --yes @agent-analytics\/cli@0\.5\.39 annotate my-site/);
-    assert.match(growthRecipes, /npx --yes @agent-analytics\/cli@0\.5\.39 compare my-site/);
+    assert.match(growthRecipes, /npx --yes @agent-analytics\/cli@0\.5\.40 annotate my-site/);
+    assert.match(growthRecipes, /npx --yes @agent-analytics\/cli@0\.5\.40 compare my-site/);
     assert.match(growthRecipes, /--ship-date 2026-04-08 --days 7/);
     assert.match(growthRecipes, /--keep-threshold 0\.15/);
     assert.match(growthRecipes, /--revert-threshold -0\.10/);
@@ -383,7 +392,7 @@ describe('agent-analytics skill contract', () => {
     assert.match(growthRecipes, /conversion_window_hours/);
     assert.match(growthRecipes, /Example defaults, not Agent Analytics policy/);
     assert.match(growthRecipes, /Before\/after is not causal/);
-    assert.doesNotMatch(growthRecipes, /@agent-analytics\/cli@0\.5\.39 query/);
+    assert.doesNotMatch(growthRecipes, /@agent-analytics\/cli@0\.5\.40 query/);
     assert.doesNotMatch(growthRecipes, /--from 2026-04-01|--to 2026-04-07|--from 2026-04-09|--to 2026-04-15/);
     assert.doesNotMatch(growthRecipes, /PRO_REQUIRED/);
     assert.doesNotMatch(growthRecipes, /needs Pro/i);
@@ -402,5 +411,114 @@ describe('agent-analytics skill contract', () => {
     assert.match(autoresearchInitScript, /references\/results-header\.txt/i);
     assert.doesNotMatch(autoresearchInitScript, /references\/results-header\.tsv/i);
     assert.match(readme, /Autoresearch should read Project Context before a snapshot/i);
+  });
+
+  it('teaches Pro query aggregations, free compare metrics, and the errors guardrail', () => {
+    assert.match(skill, /--metrics p75 --property cwv_lcp/);
+    assert.match(skill, /properties_received/);
+    assert.match(skill, /properties-received my-site/);
+    assert.match(skill, /data-track-vitals/);
+    assert.match(skill, /\$web_vitals/);
+    assert.match(skill, /`cwv_\*` keys, including `cwv_lcp`, on `page_view`/);
+    assert.match(skill, /`n` of 0 means that event is wrong/);
+    assert.match(skill, /--metrics sum --property revenue/);
+    assert.match(skill, /metrics are `sum`, `avg`, `p50`, `p75`, and `p95`/i);
+    assert.match(skill, /aa\.track\('purchase', \{ revenue: 29, currency: 'USD' \}\)/);
+    assert.match(skill, /`n` \(values used\)/);
+    assert.match(skill, /`skipped` \(values ignored\)/);
+    assert.match(skill, /nearest_rank/);
+    assert.match(skill, /These aggregations are Pro/);
+    assert.match(skill, /`compare` with `metric` stays free/);
+    assert.match(skill, /The `errors` read is Pro/);
+    assert.match(skill, /--metric 'p75\(cwv_lcp\)' --better lower/);
+    assert.doesNotMatch(skill, /--metric-event '\$web_vitals'/);
+    assert.doesNotMatch(skill, /"value":"\$web_vitals"/);
+    assert.doesNotMatch(skill, /not on page_view|not a field on `page_view`/);
+    assert.match(skill, /--metric 'sum\(revenue\)' --better higher/);
+    assert.match(skill, /--metric-event/);
+    assert.match(skill, /no_interval_for_metric/);
+    assert.match(skill, /raw_lift/);
+    assert.match(skill, /per_user/);
+    assert.match(skill, /interval_method/);
+    assert.match(skill, /errors <project> --since 7d --new-since <ship date>/);
+    assert.match(skill, /The MCP tool is `errors`/);
+    assert.match(skill, /every stored `\$error` for that fingerprint/);
+    assert.match(skill, /has no stack/);
+    assert.match(skill, /source filename, and `line`/);
+    assert.match(skill, /full UTC timestamp/);
+    assert.match(skill, /boolean `approximate`/);
+    assert.match(skill, /`caps`, an array of entries from `distinct_triples` and `window_rows`/);
+    assert.match(skill, /list `caps`/);
+    assert.doesNotMatch(skill, /name the cap|the cap the response|singular `cap`/);
+    assert.doesNotMatch(skill, /20,000/);
+    assert.doesNotMatch(skill, /10,000/);
+    assert.doesNotMatch(skill, /--property lcp/);
+    assert.doesNotMatch(skill, /p75\(lcp\)/);
+    assert.doesNotMatch(skill, /top stack/);
+    assert.doesNotMatch(skill, /needs Pro/i);
+    assert.doesNotMatch(skill, /—|–/);
+
+    assert.match(growthRecipes, /--metric 'p75\(cwv_lcp\)' --metric-event '<event>' --better lower/);
+    assert.match(growthRecipes, /properties_received/);
+    assert.match(growthRecipes, /data-track-vitals/);
+    assert.match(growthRecipes, /`cwv_\*` keys, including `cwv_lcp`, on `page_view`/);
+    assert.match(growthRecipes, /`n` of 0 means that event is wrong/);
+    assert.doesNotMatch(growthRecipes, /--metric-event '\$web_vitals'/);
+    assert.doesNotMatch(growthRecipes, /not on page_view|not a field on `page_view`/);
+    assert.match(growthRecipes, /--metric 'sum\(revenue\)' --better higher/);
+    assert.match(growthRecipes, /--metric-event/);
+    assert.match(growthRecipes, /metric_event/);
+    assert.match(growthRecipes, /no_interval_for_metric/);
+    assert.match(growthRecipes, /raw_lift/);
+    assert.match(growthRecipes, /nearest_rank/);
+    assert.match(growthRecipes, /per_user/);
+    assert.match(growthRecipes, /interval_method/);
+    assert.match(growthRecipes, /errors my-site --since 7d --new-since 2026-04-08/);
+    assert.match(growthRecipes, /errors <project> --since 7d --new-since <ship date>/);
+    assert.match(growthRecipes, /every stored `\$error` for that fingerprint/);
+    assert.match(growthRecipes, /\$error/);
+    assert.match(growthRecipes, /has no stack/);
+    assert.match(growthRecipes, /numeric `line`/);
+    assert.match(growthRecipes, /full UTC timestamp/);
+    assert.match(growthRecipes, /boolean `approximate`/);
+    assert.match(growthRecipes, /`caps`, an array of entries from `distinct_triples` and `window_rows`/);
+    assert.match(growthRecipes, /list `caps`/);
+    assert.doesNotMatch(growthRecipes, /name the cap|the cap the response|singular `cap`/);
+    assert.doesNotMatch(growthRecipes, /10,000/);
+    assert.doesNotMatch(growthRecipes, /20,000/);
+    assert.match(growthRecipes, /The MCP tool is `errors`/);
+    assert.match(growthRecipes, /Those aggregations are Pro/);
+    assert.match(growthRecipes, /`errors` is Pro/);
+    assert.match(growthRecipes, /`compare` stays free/);
+    assert.doesNotMatch(growthRecipes, /p75\(lcp\)/);
+    assert.doesNotMatch(growthRecipes, /top stack/);
+    assert.doesNotMatch(growthRecipes, /needs Pro/i);
+    assert.doesNotMatch(growthRecipes, /PRO_REQUIRED/);
+    assert.doesNotMatch(growthRecipes, /—|–/);
+    assert.doesNotMatch(growthRecipes, /@agent-analytics\/cli@0\.5\.40 query/);
+
+    assert.match(autoresearchSkill, /p75\(cwv_lcp\)/);
+    assert.match(autoresearchSkill, /metric_event` from `properties_received`/);
+    assert.match(autoresearchSkill, /data-track-vitals/);
+    assert.match(autoresearchSkill, /`n` of 0 means that event is wrong/);
+    assert.doesNotMatch(autoresearchSkill, /metric_event` `\$web_vitals`/);
+    assert.match(autoresearchSkill, /sum\(revenue\)/);
+    assert.match(autoresearchSkill, /better` `lower`/);
+    assert.match(autoresearchSkill, /no_interval_for_metric/);
+    assert.match(autoresearchSkill, /raw_lift/);
+    assert.match(autoresearchSkill, /errors "\$PROJECT_SLUG" --since 7d --new-since <ship date>/);
+    assert.match(autoresearchSkill, /The MCP tool for the guardrail is `errors`/);
+    assert.match(autoresearchSkill, /Numeric `query` aggregations and `errors` are Pro/);
+    assert.doesNotMatch(autoresearchSkill, /p75\(lcp\)/);
+    assert.match(readme, /--metrics p75 --property cwv_lcp/);
+    assert.match(readme, /properties_received/);
+    assert.match(readme, /data-track-vitals/);
+    assert.match(readme, /`cwv_\*` on `page_view`/);
+    assert.match(readme, /`n` of 0 means that event is wrong/);
+    assert.doesNotMatch(readme, /--metric-event '\$web_vitals'/);
+    assert.doesNotMatch(readme, /not on page_view/);
+    assert.match(readme, /no_interval_for_metric/);
+    assert.match(readme, /errors <project> --since 7d --new-since <ship date>/);
+    assert.match(readme, /`compare`, including `compare` with `metric`, stays free on all plans/);
   });
 });

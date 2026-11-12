@@ -31,6 +31,8 @@ Good event candidates: named CTA clicks, signup intent, pricing interactions, ch
 
 Use `data-aa-event` for named click intent, `data-aa-impression` for meaningful section exposure, `window.aa.track(...)` for computed client state, server-side tracking for durable outcomes, and identify/set calls after auth. Enable scroll depth, forms, downloads, vitals, errors, performance, or SPA tracking only when tied to a concrete decision.
 
+When vitals are part of the decision, read p75 of `cwv_lcp` with `query --metrics p75 --property cwv_lcp` after `properties_received` shows the event that carries the key. The stock tracker sends `$web_vitals` only with `data-track-vitals`. Some sites put `cwv_*` on `page_view`. `n` of 0 means that event is wrong. That aggregation is Pro. Record revenue as `aa.track('purchase', { revenue: 29, currency: 'USD' })` and aggregate `revenue` with `sum`. `29` and `USD` are the public example. After a ship, run free `compare` with `metric` `p75(cwv_lcp)`, `metric_event` from `properties_received`, and `better=lower`. Report `lift`, `raw_lift`, and window `value`. v1 returns `extend` with reason `no_interval_for_metric` when a threshold is met. Also run Pro `errors` with `new_since` set to the ship date. The group fingerprint is normalized message, source filename, and `line`. `$error` has no stack.
+
 Do not duplicate automatic signals: page views, path, referrer, UTM fields, device/browser, country, sessions, first-touch attribution, or days since first visit.
 
 ## Context upkeep

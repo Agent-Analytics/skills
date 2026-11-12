@@ -1,6 +1,6 @@
 ---
 name: agent-analytics
-description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read one shipped change on ship day + 8, then recommend the smallest growth action using the official Agent Analytics CLI."
+description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read numeric property metrics such as p75 of cwv_lcp or sum of revenue, read one shipped change on ship day + 8 with compare (metric, metric_event, and better=lower for vitals) plus an errors guardrail, then recommend the smallest growth action using the official Agent Analytics CLI."
 version: 4.0.37
 author: dannyshmueli
 license: MIT
@@ -30,17 +30,17 @@ metadata:
 
 # Agent Analytics
 
-Product analytics with your AI agent. Use this skill when a user wants an agent to install Agent Analytics, query product behavior, diagnose activation or retention, inspect paths and funnels, run experiment reads, read one shipped change on ship day + 8, or decide what growth action to take next.
+Product analytics with your AI agent. Use this skill when a user wants an agent to install Agent Analytics, query product behavior, diagnose activation or retention, inspect paths and funnels, run experiment reads, read numeric property metrics, read one shipped change on ship day + 8, check new errors since that ship, or decide what growth action to take next.
 
 The CLI is the execution substrate. Start from the user's codebase, project goals, and product workflows whenever repo access exists. Framework recipes belong in `references/growth-recipes.md`, not as separate skills.
 
 ## Mandatory execution policy
 
-- For live Agent Analytics work, use `npx --yes @agent-analytics/cli@0.5.39 <command>`.
+- For live Agent Analytics work, use `npx --yes @agent-analytics/cli@0.5.40 <command>`.
 - Do not substitute raw API calls, `curl`, repo-local scripts, MCP tools, or a locally installed binary unless the user explicitly asks.
-- Use fixed commands first: `projects`, `all-sites`, `create`, `stats`, `insights`, `events`, `properties`, `properties-received`, `breakdown`, `pages`, `paths`, `journey`, `sessions`, `sessions-dist`, `replays`, `retention`, `funnel`, `experiments`, `context`, `compare`, `annotate`, `portfolios`, `feedback`, and `upgrade-link`.
-- There is no `report` command in CLI `0.5.39`. Produce the final report yourself from fixed-command outputs instead of calling `report`.
-- Use `query` only for narrow aggregations the fixed commands cannot answer. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text. The shipped-change read is `compare`, which is free on all plans and costs one read per call.
+- Use fixed commands first: `projects`, `all-sites`, `create`, `stats`, `insights`, `events`, `properties`, `properties-received`, `breakdown`, `pages`, `paths`, `journey`, `sessions`, `sessions-dist`, `replays`, `retention`, `funnel`, `experiments`, `context`, `compare`, `annotate`, `errors`, `portfolios`, `feedback`, and `upgrade-link`.
+- There is no `report` command in CLI `0.5.40`. Produce the final report yourself from fixed-command outputs instead of calling `report`.
+- Use `query` only for narrow aggregations the fixed commands cannot answer, including Pro numeric metrics `sum`, `avg`, `p50`, `p75`, and `p95` with `--property`. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text. The shipped-change read is `compare`, which is free on all plans and costs one read per call. `compare` with `metric` stays free. The `errors` read is Pro and costs one read per call.
 - Default to browser approval. Use detached login only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the browser callback cannot work.
 - Do not ask for raw API keys or secrets. Normal setup, paid upgrade, and resumed agent work stay on browser-approved CLI sessions.
 - If the CLI returns `PRO_REQUIRED` or a free-tier read cap, explain the blocked answer, run `upgrade-link --detached`, send the dashboard handoff, run `whoami` after upgrade, then rerun the blocked command. Use `upgrade-link --wait` only when polling is intentionally desired. The dashboard page first confirms the same account as the CLI. Keep the full retry command and private analysis context in the agent session; browser links use a fixed reason and omit custom commands.
@@ -51,9 +51,9 @@ The CLI is the execution substrate. Start from the user's codebase, project goal
 For Claude Code, Codex, Cursor, and local CLI runtimes, start with normal browser approval:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.39 login
-npx --yes @agent-analytics/cli@0.5.39 create my-site --domain https://mysite.com
-npx --yes @agent-analytics/cli@0.5.39 events my-site --event <first_useful_event> --days 7 --limit 20
+npx --yes @agent-analytics/cli@0.5.40 login
+npx --yes @agent-analytics/cli@0.5.40 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.40 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
 Do not choose detached login just because the work is happening inside an agent. For Paperclip, OpenClaw, and other issue-based runtimes, run `login --detached`, send the approval URL, wait for the finish code, then complete the printed exchange command.
@@ -62,9 +62,9 @@ In OpenClaw and similar managed runtimes, use persistent auth storage and never 
 
 ```bash
 export AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics"
-npx --yes @agent-analytics/cli@0.5.39 login --detached
-npx --yes @agent-analytics/cli@0.5.39 auth status
-AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics" npx --yes @agent-analytics/cli@0.5.39 projects
+npx --yes @agent-analytics/cli@0.5.40 login --detached
+npx --yes @agent-analytics/cli@0.5.40 auth status
+AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics" npx --yes @agent-analytics/cli@0.5.40 projects
 ```
 
 `--config-dir "$PWD/.openclaw/agent-analytics"` is also valid. Never commit `.openclaw/agent-analytics/config.json`. See `references/setup-auth.md` for more setup detail.
@@ -125,8 +125,8 @@ Use this closed-loop growth recipe for broad questions like where activation dro
 1. Resolve auth and project; account-wide questions start with `projects`.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.39 context get my-site
-npx --yes @agent-analytics/cli@0.5.39 funnel my-site --steps-json '[{"event":"page_view"},{"event":"signup_completed"},{"event":"first_value"}]'
+npx --yes @agent-analytics/cli@0.5.40 context get my-site
+npx --yes @agent-analytics/cli@0.5.40 funnel my-site --steps-json '[{"event":"page_view"},{"event":"signup_completed"},{"event":"first_value"}]'
 ```
 
 2. Read `context get <project>` and treat configured activation events as the activation source of truth. If activation is missing, ask for it or configure it; do not guess silently.
@@ -144,9 +144,28 @@ Funnel analyst behavior: name the population and conversion window, show counts 
 
 Portfolio surface-role diagnosis: identify each project's role in the growth system, then read project-local metrics against that role. Do not reuse one activation definition across app, docs, directory, landing page, or lead-gen projects unless the user explicitly defines it.
 
+## Numeric property metrics
+
+Use `query` for a numeric property the fixed commands cannot aggregate. Metrics are `sum`, `avg`, `p50`, `p75`, and `p95`. `--property` is required with any of those metrics. The key must match `^[A-Za-z0-9_]+$` and be at most 128 characters. A missing property returns 400 `MISSING_FIELDS`. An invalid key returns 400 `INVALID_PROPERTY_KEY`. Only JSON numbers are aggregated. Numeric strings, booleans, nulls, and missing keys are skipped. Each row returns the metric you asked for, `n` (values used), and `skipped` (values ignored). `percentile_method` is `nearest_rank` when a percentile is requested and null for `sum` or `avg` only. Nearest-rank sorts ascending, breaks ties by event id, and picks rank `ceil(p/100 * n)`. Existing event filters, date ranges, filters, and `group_by` still apply. These aggregations are Pro, with the same gate as other `query` calls. A free account gets 403 `PRO_REQUIRED` and the blocked call is not metered. If the CLI returns `PRO_REQUIRED`, use the paid-tier handoff, then rerun the command.
+
+Before this query, run `properties-received <project>` (MCP `properties_received`) and filter to the event that carries the key. The stock tracker sends `$web_vitals` only with `data-track-vitals`. Some sites put `cwv_*` keys, including `cwv_lcp`, on `page_view`. `n` of 0 means that event is wrong.
+
+```bash
+npx --yes @agent-analytics/cli@0.5.40 properties-received my-site
+npx --yes @agent-analytics/cli@0.5.40 query my-site --metrics p75 --property cwv_lcp --filter '[{"field":"event","op":"eq","value":"<event>"}]'
+```
+
+Revenue example. Record purchases as `aa.track('purchase', { revenue: 29, currency: 'USD' })`, then sum `revenue`. `29` and `USD` are the public example.
+
+```bash
+npx --yes @agent-analytics/cli@0.5.40 query my-site --metrics sum --property revenue --filter '[{"field":"event","op":"eq","value":"purchase"}]'
+```
+
+MCP `query` takes `metrics`, `property`, and `filters`. Do not start broad growth diagnosis with `query`. Do not read a shipped change with `query`. Use `compare` for that read. `compare` with `metric` stays free.
+
 ## Change read
 
-When you ship a change, such as a landing page edit, read it once on ship day + 8 or later. The command, a worked window, and the verdict rules are in `references/growth-recipes.md` under Change read recipe. Use `compare`. It is free on all plans and costs one read per call. The verdict is `keep`, `revert`, or `extend`, and it comes from the API. Report `verdict` and `reason`. Do not compute them yourself.
+When you ship a change, such as a landing page edit, read it once on ship day + 8 or later. The command, a worked window, and the verdict rules are in `references/growth-recipes.md` under Change read recipe. Use `compare`. It is free on all plans and costs one read per call. The verdict is `keep`, `revert`, or `extend`, and it comes from the API. Report `verdict` and `reason`. Do not compute them yourself. On that same day, run `errors` with `new_since` set to the ship date. `errors` is the guardrail beside `compare`. It is Pro and costs one read per call.
 
 1. Before shipping, write the rule down: goal event, denominator event, keep and revert thresholds as fractions, and the minimums. `0.15` = +15% relative lift. The absolute value of each threshold must be 5 or less. The denominator minimum is denominator unique users in each window. The goal count is unique converters: a user who fires the goal 3 times counts once. Each window reports `denominator_unique_users`, `goal_converters`, and `rate`. Record the baseline window and the compare window. The two windows use the same weekdays and exclude the ship day. With `--ship-date` and `--days 7`, `compare` reads 7 days before the ship day and 7 days after it. Keep the full rule with the schedule.
 2. At ship time, record the ship with `annotate`. Annotation fields are only `occurred_at`, `title` (max 120 characters), and optional `note` (max 500 characters). Put a short copy of the rule in `note` when it fits. `annotate` adds one annotation. Do not use `context set` for the ship. `context set` replaces the whole context.
@@ -155,6 +174,8 @@ When you ship a change, such as a landing page edit, read it once on ship day + 
 5. If the compare window may contain 404 or one-hit bot page views, for example right after sharing new URLs, rerun `compare` with `--exclude-denominator "properties.title=<404 page title>"` before trusting a revert. MCP `compare` sends that exclusion as `denominator_filters`: `[{"field":"properties.title","op":"neq","value":"<404 page title>"}]`. It applies only to the denominator.
 6. Name any other annotation whose `occurred_at` falls in either window. Those are confounds. A shift in traffic source can confound the read as well. Before/after is not causal.
 7. On a low-traffic site, prefer an upper-funnel rate: denominator event `page_view`, goal event a CTA click. Prefer that over a signup rate. Example defaults, not Agent Analytics policy: 200 denominator unique users per window, 20 goal converters across both windows, keep threshold `0.15` (+15% relative lift), revert threshold `-0.10` (-10% relative lift).
+8. When the shipped change is about a numeric property, call the same free `compare` with `--metric` set to `sum(<prop>)`, `avg(<prop>)`, `p50(<prop>)`, `p75(<prop>)`, or `p95(<prop>)`. `--metric-event` is the event that carries the property. It defaults to the goal event. Set it when they differ. For LCP, pass `--metric 'p75(cwv_lcp)' --better lower` and set `--metric-event` from `properties_received`. The stock tracker sends `$web_vitals` only with `data-track-vitals`. Some sites put `cwv_*` on `page_view`. `n` of 0 means that event is wrong. Revenue on the `purchase` event from `aa.track('purchase', { revenue: 29, currency: 'USD' })` uses `--metric 'sum(revenue)' --better higher` and can omit `--metric-event`. Default `better` is `higher`. Set `better` to `lower` for `cwv_lcp` and the other Web Vitals properties. The property name does not select the direction. `sum(<prop>)` is the sum per unique denominator user and sets `per_user` to true. `avg` and percentiles set `per_user` to false. v1 returns `interval` null and `interval_method` `"none"`. `lift` is `(compare value - baseline value) / baseline value`, negated when `better` is `lower`. `raw_lift` is that ratio before the negation. `--min-goal-events` counts `n` on `metric_event` across both windows (default 20), not unique converters. Below that minimum, or below `min_denominator` in either window, the verdict is `extend` with reason `below_min_sample`. When `lift` meets `keep_threshold` or `revert_threshold`, the verdict is `extend` with reason `no_interval_for_metric`. When `lift` is between the thresholds, the verdict is `extend` with reason `no_evidence_of_gain`. Report `lift`, `raw_lift`, and each window's `value`, `n`, and `skipped`. `no_interval_for_metric` is not a keep and it is not a revert. Leave `metric` unset to keep the conversion-rate rules in step 4. MCP `compare` fields are `metric`, `metric_event`, and `better`. Worked commands are in the change read recipe.
+9. On that same day, run `errors <project> --since 7d --new-since <ship date>` beside `compare`. The MCP tool is `errors`. A free account gets 403 `PRO_REQUIRED` and that blocked call is not metered. A successful call is one metered read. `$error` stores `message`, `source`, `line`, and `col`, and it has no stack. The fingerprint is the SHA-256 of the normalized message, the source filename, and `line`. `new_since` is a `YYYY-MM-DD` date or annotation text. A date compares `first_seen` to that calendar date. An annotation compares `first_seen` to the annotation's full UTC timestamp. `first_seen` and `last_seen` use every stored `$error` for that fingerprint, not only the `--since` window. Zero annotation matches returns 400. More than one match returns 400 and lists `matches`. Every response includes boolean `approximate`. When `approximate` is true, it also includes `caps`, an array of entries from `distinct_triples` and `window_rows`. Say the counts are approximate and list `caps`. Report groups with `new_since` true next to `lift`, `raw_lift`, and the window values. They do not replace those numbers.
 
 ## Analytics answer contract
 
@@ -185,7 +206,7 @@ Load references only when they are needed:
 
 - `references/setup-auth.md`: login modes, managed-runtime storage, paid-tier handoff, and safe command examples.
 - `references/product-analytics-operating-model.md`: projects/surfaces/portfolios, consent-based instrumentation, context upkeep, and verification.
-- `references/growth-recipes.md`: AARRR, Bullseye, AIDA, STP, JTBD, 4Ps, funnel/retention/experiment recipes, the change read recipe, and copyable prompts.
+- `references/growth-recipes.md`: AARRR, Bullseye, AIDA, STP, JTBD, 4Ps, funnel/retention/experiment recipes, the change read recipe (including `metric`, `metric_event`, `better=lower` for `cwv_lcp`, `no_interval_for_metric`, and the `errors` guardrail), and copyable prompts.
 
 ## Pitfalls
 
@@ -196,7 +217,9 @@ Load references only when they are needed:
 - Do not answer with raw-number dumps; use the analytics answer contract.
 - Do not rank channels by signups alone, claim strict user conversion across projects without configured identity, or infer causality from correlation.
 - Do not approximate paid-only reads if the user does not upgrade.
-- Do not read a shipped change with `query`, `funnel`, or `insights`. Use `compare`. It is free on all plans and costs one read per call.
+- Do not read a shipped change with `query`, `funnel`, or `insights`. Use `compare`. It is free on all plans and costs one read per call. For a numeric property, pass `metric` on that `compare`, and pass `--metric-event` from `properties_received` when that event is not the goal. For `cwv_lcp`, set `better` to `lower`. `n` of 0 means that event is wrong. Report `lift`, `raw_lift`, and window `value`. Reason `no_interval_for_metric` is not a keep or a revert.
+- Do not skip `errors` after a ship. Run `errors <project> --since 7d --new-since <ship date>` beside `compare`.
+- Do not treat `query` numeric aggregations or `errors` as free. They are Pro. `compare`, including `compare` with `metric`, stays free.
 
 ## Verification
 
@@ -208,3 +231,4 @@ Before finishing setup or analysis:
 - Verify at least one first useful event with `events <project> --event <event_name> --days 7 --limit 20`.
 - Verify context reads/writes preserve existing durable truth.
 - Verify the final answer follows diagnosis, metric definition, evidence, segment/surface, caveat, and one bounded next action.
+- After a shipped-change read, verify `compare` returned `verdict` and `reason`, and verify `errors` ran with `new_since` set to the ship date.
