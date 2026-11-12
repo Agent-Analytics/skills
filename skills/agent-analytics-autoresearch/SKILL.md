@@ -1,7 +1,7 @@
 ---
 name: agent-analytics-autoresearch
 description: "Run an autoresearch-style growth loop for landing pages, onboarding, pricing, and experiment candidates. Collect or read analytics snapshots, preserve product truth, generate/critique/synthesize variants, blind-rank with Borda scoring, and output two review-ready A/B test variants. Works with any analytics data; best with Agent Analytics CLI/API."
-version: 1.0.12
+version: 1.0.13
 author: dannyshmueli
 license: MIT
 repository: https://github.com/Agent-Analytics/skills
@@ -129,18 +129,18 @@ The outer loop prevents the LLM panel from becoming the final judge. LLMs genera
 Use the official CLI when collecting live Agent Analytics data:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 insights "$PROJECT_SLUG" --period 7d
-npx --yes @agent-analytics/cli@0.5.40 pages "$PROJECT_SLUG" --since 7d
-npx --yes @agent-analytics/cli@0.5.40 funnel "$PROJECT_SLUG" --steps "page_view,$PROXY_EVENT,$PRIMARY_EVENT" --since 7d
-npx --yes @agent-analytics/cli@0.5.40 events "$PROJECT_SLUG" --event "$PROXY_EVENT" --days 7 --limit 50
-npx --yes @agent-analytics/cli@0.5.40 events "$PROJECT_SLUG" --event "$PRIMARY_EVENT" --days 7 --limit 50
-npx --yes @agent-analytics/cli@0.5.40 experiments list "$PROJECT_SLUG"
+npx --yes @agent-analytics/cli@0.5.41 insights "$PROJECT_SLUG" --period 7d
+npx --yes @agent-analytics/cli@0.5.41 pages "$PROJECT_SLUG" --since 7d
+npx --yes @agent-analytics/cli@0.5.41 funnel "$PROJECT_SLUG" --steps "page_view,$PROXY_EVENT,$PRIMARY_EVENT" --since 7d
+npx --yes @agent-analytics/cli@0.5.41 events "$PROJECT_SLUG" --event "$PROXY_EVENT" --days 7 --limit 50
+npx --yes @agent-analytics/cli@0.5.41 events "$PROJECT_SLUG" --event "$PRIMARY_EVENT" --days 7 --limit 50
+npx --yes @agent-analytics/cli@0.5.41 experiments list "$PROJECT_SLUG"
 ```
 
-A post-ship or post-experiment read uses the regular `agent-analytics` skill's change read. `compare` is free. Pass `metric` `p75(cwv_lcp)` with `better` `lower`, and set `metric_event` from `properties_received`. The stock tracker sends `$web_vitals` only with `data-track-vitals`. Some sites put `cwv_*` on `page_view`. `n` of 0 means that event is wrong. Or pass `metric` `sum(revenue)` with `better` `higher` when the goal event is `purchase`. In v1 a threshold hit returns `extend` with reason `no_interval_for_metric`. Report `lift`, `raw_lift`, and window `value`. That reason is not a keep or a revert. Beside that compare, run:
+A post-ship or post-experiment read uses the regular `agent-analytics` skill's change read. `compare` is free. For hosted LCP, pass `metric` `p75(cwv_lcp)` with `better` `lower` and `metric_event` `page_view`. Hosted stores `cwv_*` on `page_view`. Self-hosted core stores `$web_vitals`. Default install snippets include `data-track-vitals="true"`. A vitals or page speed question that is not this before/after read uses the vitals read first (CLI `vitals`, MCP `web_vitals`, API `POST /vitals`). p75 is the headline. `cwv_pass` is true when LCP, INP, and CLS p75 are all good. Or pass `metric` `sum(revenue)` with `better` `higher` when the goal event is `purchase`. In v1 a threshold hit returns `extend` with reason `no_interval_for_metric`. Report `lift`, `raw_lift`, and window `value`. That reason is not a keep or a revert. Beside that compare, run:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 errors "$PROJECT_SLUG" --since 7d --new-since <ship date>
+npx --yes @agent-analytics/cli@0.5.41 errors "$PROJECT_SLUG" --since 7d --new-since <ship date>
 ```
 
 Numeric `query` aggregations and `errors` are Pro. `compare` stays free. The MCP tool for the guardrail is `errors`.
@@ -150,7 +150,7 @@ If login is needed, prefer the regular `agent-analytics` skill's browser approva
 Before interpreting the snapshot, also read the compact project memory:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 context get "$PROJECT_SLUG"
+npx --yes @agent-analytics/cli@0.5.41 context get "$PROJECT_SLUG"
 ```
 
 If the autoresearch run reveals durable product truth that should guide future analytics, use the regular `agent-analytics` skill's project context workflow to read the existing context, merge the compact update, and write it back. Do not store raw round notes or time-bound metric values as project context.
