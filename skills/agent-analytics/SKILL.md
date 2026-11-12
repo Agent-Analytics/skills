@@ -1,6 +1,6 @@
 ---
 name: agent-analytics
-description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read one shipped change about 7 days later, then recommend the smallest growth action using the official Agent Analytics CLI."
+description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read one shipped change on ship day + 8, then recommend the smallest growth action using the official Agent Analytics CLI."
 version: 4.0.37
 author: dannyshmueli
 license: MIT
@@ -30,7 +30,7 @@ metadata:
 
 # Agent Analytics
 
-Product analytics with your AI agent. Use this skill when a user wants an agent to install Agent Analytics, query product behavior, diagnose activation or retention, inspect paths and funnels, run experiment reads, read one shipped change about 7 days later, or decide what growth action to take next.
+Product analytics with your AI agent. Use this skill when a user wants an agent to install Agent Analytics, query product behavior, diagnose activation or retention, inspect paths and funnels, run experiment reads, read one shipped change on ship day + 8, or decide what growth action to take next.
 
 The CLI is the execution substrate. Start from the user's codebase, project goals, and product workflows whenever repo access exists. Framework recipes belong in `references/growth-recipes.md`, not as separate skills.
 
@@ -38,9 +38,9 @@ The CLI is the execution substrate. Start from the user's codebase, project goal
 
 - For live Agent Analytics work, use `npx --yes @agent-analytics/cli@0.5.37 <command>`.
 - Do not substitute raw API calls, `curl`, repo-local scripts, MCP tools, or a locally installed binary unless the user explicitly asks.
-- Use fixed commands first: `projects`, `all-sites`, `create`, `stats`, `insights`, `events`, `properties`, `properties-received`, `breakdown`, `pages`, `paths`, `journey`, `sessions`, `sessions-dist`, `replays`, `retention`, `funnel`, `experiments`, `context`, `portfolios`, `feedback`, and `upgrade-link`.
+- Use fixed commands first: `projects`, `all-sites`, `create`, `stats`, `insights`, `events`, `properties`, `properties-received`, `breakdown`, `pages`, `paths`, `journey`, `sessions`, `sessions-dist`, `replays`, `retention`, `funnel`, `experiments`, `context`, `compare`, `append-annotation`, `portfolios`, `feedback`, and `upgrade-link`.
 - There is no `report` command in CLI `0.5.37`. Produce the final report yourself from fixed-command outputs instead of calling `report`.
-- Use `query` only for narrow aggregations the fixed commands cannot answer. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text.
+- Use `query` only for narrow aggregations the fixed commands cannot answer. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text. The shipped-change read is `compare`, which is free on all plans and costs one read per call.
 - Default to browser approval. Use detached login only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the browser callback cannot work.
 - Do not ask for raw API keys or secrets. Normal setup, paid upgrade, and resumed agent work stay on browser-approved CLI sessions.
 - If the CLI returns `PRO_REQUIRED` or a free-tier read cap, explain the blocked answer, run `upgrade-link --detached`, send the dashboard handoff, run `whoami` after upgrade, then rerun the blocked command. Use `upgrade-link --wait` only when polling is intentionally desired. The dashboard page first confirms the same account as the CLI. Keep the full retry command and private analysis context in the agent session; browser links use a fixed reason and omit custom commands.
@@ -116,7 +116,7 @@ Keep context short. Save durable product truth: goals, activation definitions, e
 
 Skip noisy findings: weekly metric values, temporary spikes, pasted reports, raw round notes, long notes, user lists, PII, secrets, git commit logs, and guesses. Do not store git commit logs. Do not invent unsupported fields such as `findings`, `learnings`, or `open_questions`; store only what fits `goals`, `activation_events`, event-name `glossary`, and `annotations`.
 
-Annotations use `occurred_at`, `title`, and optional `note`. Keep them rare: max 100, JSON body up to 512KB. Analytics responses include annotations only for the requested analytics date range plus one day before and after; `context get` returns all annotations. For multi-project or multi-domain systems, keep activation and glossary separate unless the human explicitly says they share meaning. Example activations: trial signup plus first item created; teammate invited. This is how the next analysis starts smarter.
+Annotations use `occurred_at`, `title`, and optional `note`. Add one annotation with `append-annotation` (MCP `append_annotation`) so the rest of the stored context stays in place. Keep them rare: max 100, JSON body up to 512KB. Analytics responses include annotations only for the requested analytics date range plus one day before and after; `context get` returns all annotations. For multi-project or multi-domain systems, keep activation and glossary separate unless the human explicitly says they share meaning. Example activations: trial signup plus first item created; teammate invited. This is how the next analysis starts smarter.
 
 ## Analytics loop
 
@@ -146,13 +146,14 @@ Portfolio surface-role diagnosis: identify each project's role in the growth sys
 
 ## Change read
 
-When you ship a change, such as a landing page edit, read it once about 7 days later and decide keep, revert, or extend. Flags, a worked window, and the rate math are in `references/growth-recipes.md` under Change read recipe. This is a narrow `query`: the fixed commands cannot express two closed windows.
+When you ship a change, such as a landing page edit, read it once on ship day + 8. The command, a worked window, and the threshold fractions are in `references/growth-recipes.md` under Change read recipe. Use `compare`. It is free on all plans and costs one read per call. The verdict is `keep`, `revert`, or `extend`, and it comes from the API. Do not compute it yourself.
 
-1. Before shipping, write the rule down: goal event, denominator event, keep and revert thresholds as relative change, and the minimum sample. Record the baseline window and the compare window. The two windows use the same weekdays and exclude the ship day. The usual pair is the 7 days before the ship day and the 7 days after it. Add one annotation with `context get`, then `context set`. `context set` replaces the whole context, so read first and merge goals, activation events, glossary entries, and annotations that are still valid. Annotation fields are only `occurred_at`, `title` (max 120 characters), and optional `note` (max 500 characters). Put a short copy of the rule in `note` when it fits. Keep the full rule with the schedule.
-2. Schedule that one read in the host agent. A Grok Bot one-off dated routine is enough. Use a Claude or Codex scheduler when that host has one. Agent Analytics does not schedule or notify.
-3. On the day, count each window with CLI `query` or MCP `query`. CLI `--from` and `--to` are `date_from` and `date_to`. MCP fields are `date_from` and `date_to`. Pass both dates on every call. `funnel` and MCP `analytics_funnel` accept `--since` / `since` only (a lookback or an ISO start) plus a conversion window in hours, so they cannot close a past window. `insights` and MCP `analytics_insights` compare a trailing `period` of `1d`, `7d`, `14d`, `30d`, or `90d` and cannot be anchored to the ship date.
-4. Verdict. Below the minimum sample, extend once with the same rule. Keep only when the minimum is met and relative lift is at or above the keep threshold. Revert when relative lift is at or below the revert threshold. Revert when the minimum is met and the lift does not clear the keep threshold: that is no evidence of a gain. If the one extension is still under the minimum sample, revert. Check other annotations whose `occurred_at` falls in either window, and traffic-source mix shifts, as confounds. Before/after is not causal.
-5. On a low-traffic site, prefer an upper-funnel rate: denominator event `page_view`, goal event a CTA click. Prefer that over a signup rate. Example defaults, not Agent Analytics policy: 200 visitors per window, 20 goal events across both windows, keep at +15% relative lift, revert at -10% relative lift.
+1. Before shipping, write the rule down: goal event, denominator event, keep and revert thresholds as fractions, and the minimum sample. `0.10` = +10% relative lift. `-0.10` = -10% relative lift. Record the baseline window and the compare window. The two windows use the same weekdays and exclude the ship day. `compare` reads the 7 days before the ship day and the 7 days after it. Keep the full rule with the schedule.
+2. At ship time, record the ship with `append-annotation`. Annotation fields are only `occurred_at`, `title` (max 120 characters), and optional `note` (max 500 characters). Put a short copy of the rule in `note` when it fits. `append-annotation` adds one annotation. Do not use `context set` for the ship. `context set` replaces the whole context.
+3. Schedule that one read in the host agent for ship day + 8, the first day the compare window has no partial day. A Grok Bot one-off dated routine is enough. Use a Claude or Codex scheduler when that host has one. Agent Analytics does not schedule or notify.
+4. On that day, call `compare` once. Pass the written goal event, denominator event, ship date, threshold fractions, and minimum sample. CLI flags and MCP fields are in the change read recipe. Report the response `verdict`. Do not recompute it from rates. If the verdict is `extend`, schedule one more `compare` with the same rule, again on a day when the compare window has no partial day.
+5. Name any other annotation whose `occurred_at` falls in either window. Those are confounds. A shift in traffic source can confound the read as well. Before/after is not causal.
+6. On a low-traffic site, prefer an upper-funnel rate: denominator event `page_view`, goal event a CTA click. Prefer that over a signup rate. Example defaults, not Agent Analytics policy: 200 visitors per window, 20 goal events across both windows, keep at `0.15` (+15% relative lift), revert at `-0.10` (-10% relative lift).
 
 ## Analytics answer contract
 
@@ -194,7 +195,7 @@ Load references only when they are needed:
 - Do not answer with raw-number dumps; use the analytics answer contract.
 - Do not rank channels by signups alone, claim strict user conversion across projects without configured identity, or infer causality from correlation.
 - Do not approximate paid-only reads if the user does not upgrade.
-- Do not read a closed change-read window with `funnel` or `insights`. Use `query` with `--from` and `--to`.
+- Do not read a shipped change with `query`, `funnel`, or `insights`. Use `compare`. It is free on all plans and costs one read per call.
 
 ## Verification
 
