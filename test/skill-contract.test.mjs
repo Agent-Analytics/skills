@@ -25,14 +25,14 @@ const growthRecipes = readFileSync(
 );
 
 describe('agent-analytics skill contract', () => {
-  it('pins the official CLI to 0.5.38 everywhere', () => {
+  it('pins the official CLI to 0.5.39 everywhere', () => {
     assert.match(skill, /version: 4\.0\.37/);
-    assert.ok(skill.includes('npx --yes @agent-analytics/cli@0.5.38'));
-    assert.ok(readme.includes('npx --yes @agent-analytics/cli@0.5.38'));
+    assert.ok(skill.includes('npx --yes @agent-analytics/cli@0.5.39'));
+    assert.ok(readme.includes('npx --yes @agent-analytics/cli@0.5.39'));
     assert.match(autoresearchSkill, /version: 1\.0\.12/);
-    assert.ok(autoresearchSkill.includes('npx --yes @agent-analytics/cli@0.5.38'));
-    assert.ok(autoresearchBriefTemplate.includes('npx --yes @agent-analytics/cli@0.5.38'));
-    assert.ok(autoresearchSnapshotScript.includes('npx --yes @agent-analytics/cli@0.5.38'));
+    assert.ok(autoresearchSkill.includes('npx --yes @agent-analytics/cli@0.5.39'));
+    assert.ok(autoresearchBriefTemplate.includes('npx --yes @agent-analytics/cli@0.5.39'));
+    assert.ok(autoresearchSnapshotScript.includes('npx --yes @agent-analytics/cli@0.5.39'));
     for (const content of [
       skill,
       readme,
@@ -98,7 +98,7 @@ describe('agent-analytics skill contract', () => {
 
   it('keeps local runtimes on browser login and detached as the fallback path', () => {
     assert.match(skill, /Claude Code, Codex, Cursor, and local CLI runtimes/i);
-    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.38 login/i);
+    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.39 login/i);
     assert.match(skill, /do not choose detached login just because/i);
     assert.match(skill, /Paperclip, OpenClaw, and other issue-based runtimes/i);
     assert.match(skill, /finish code/i);
@@ -237,11 +237,11 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /Recommend a readiness fix instead of an experiment/i);
     assert.match(skill, /Read experiments against the business goal event, not exposure count/i);
     assert.match(skill, /diagnosis, metric definition, evidence, segment\/surface, caveat, and one bounded next action/i);
-    assert.match(skill, /There is no `report` command in CLI `0\.5\.38`/i);
+    assert.match(skill, /There is no `report` command in CLI `0\.5\.39`/i);
     assert.match(skill, /Produce the final report yourself from fixed-command outputs/i);
     assert.doesNotMatch(skill, /Start with .*`report`/i);
-    assert.doesNotMatch(skill, /npx --yes @agent-analytics\/cli@0\.5\.38 report/i);
-    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.38/);
+    assert.doesNotMatch(skill, /npx --yes @agent-analytics\/cli@0\.5\.39 report/i);
+    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.39/);
     assert.doesNotMatch(skill, /raw SQL|POST \/aaql\/query|\/aaql\/plan|\/aaql\/execute/i);
   });
 
@@ -316,6 +316,11 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /Example defaults, not Agent Analytics policy/);
     assert.match(skill, /the change read recipe/);
     assert.match(skill, /The shipped-change read is `compare`/);
+    assert.match(skill, /--exclude-denominator "properties\.title=<404 page title>"/);
+    assert.match(skill, /before trusting a revert/);
+    assert.match(skill, /404 or one-hit bot page views/);
+    assert.match(skill, /denominator_filters/);
+    assert.match(skill, /"op":"neq"/);
     assert.match(skill, /`compare`, `annotate`/);
     assert.doesNotMatch(skill, /append-annotation|append_annotation|min_visitors|--min-visitors/);
     assert.doesNotMatch(skill, /--date-from|--date-to|--until/);
@@ -343,8 +348,8 @@ describe('agent-analytics skill contract', () => {
     assert.match(growthRecipes, /no_evidence_of_gain/);
     assert.match(growthRecipes, /20 goal converters across both windows/);
     assert.doesNotMatch(growthRecipes, /revert at `-0\.10`|10% drop alone|drop alone means revert|goal_event_count/);
-    assert.match(growthRecipes, /npx --yes @agent-analytics\/cli@0\.5\.38 annotate my-site/);
-    assert.match(growthRecipes, /npx --yes @agent-analytics\/cli@0\.5\.38 compare my-site/);
+    assert.match(growthRecipes, /npx --yes @agent-analytics\/cli@0\.5\.39 annotate my-site/);
+    assert.match(growthRecipes, /npx --yes @agent-analytics\/cli@0\.5\.39 compare my-site/);
     assert.match(growthRecipes, /--ship-date 2026-04-08 --days 7/);
     assert.match(growthRecipes, /--keep-threshold 0\.15/);
     assert.match(growthRecipes, /--revert-threshold -0\.10/);
@@ -365,6 +370,10 @@ describe('agent-analytics skill contract', () => {
     assert.match(growthRecipes, /append_project_annotation/);
     assert.match(growthRecipes, /denominator unique users/);
     assert.match(growthRecipes, /There is no `min_visitors` field/);
+    assert.match(growthRecipes, /--exclude-denominator "properties\.title=<404 page title>"/);
+    assert.match(growthRecipes, /denominator_filters/);
+    assert.match(growthRecipes, /applies only to denominator events/);
+    assert.match(growthRecipes, /before trusting a revert/);
     assert.doesNotMatch(growthRecipes, /append-annotation|append_annotation|--min-visitors|--occurred-at|--keep 0\.15|--revert -0\.10/);
     assert.match(growthRecipes, /verdict` is `keep`, `revert`, or `extend`/);
     assert.match(growthRecipes, /Do not compute the verdict from rates/);
@@ -374,7 +383,7 @@ describe('agent-analytics skill contract', () => {
     assert.match(growthRecipes, /conversion_window_hours/);
     assert.match(growthRecipes, /Example defaults, not Agent Analytics policy/);
     assert.match(growthRecipes, /Before\/after is not causal/);
-    assert.doesNotMatch(growthRecipes, /@agent-analytics\/cli@0\.5\.38 query/);
+    assert.doesNotMatch(growthRecipes, /@agent-analytics\/cli@0\.5\.39 query/);
     assert.doesNotMatch(growthRecipes, /--from 2026-04-01|--to 2026-04-07|--from 2026-04-09|--to 2026-04-15/);
     assert.doesNotMatch(growthRecipes, /PRO_REQUIRED/);
     assert.doesNotMatch(growthRecipes, /needs Pro/i);
