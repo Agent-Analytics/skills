@@ -437,6 +437,10 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /every stored `\$error` for that fingerprint/);
     assert.match(skill, /has no stack/);
     assert.match(skill, /source filename, and `line`/);
+    assert.match(skill, /full UTC timestamp/);
+    assert.match(skill, /When `approximate` is true/);
+    assert.doesNotMatch(skill, /20,000/);
+    assert.doesNotMatch(skill, /10,000/);
     assert.doesNotMatch(skill, /--property lcp/);
     assert.doesNotMatch(skill, /p75\(lcp\)/);
     assert.doesNotMatch(skill, /top stack/);
@@ -458,6 +462,10 @@ describe('agent-analytics skill contract', () => {
     assert.match(growthRecipes, /\$error/);
     assert.match(growthRecipes, /has no stack/);
     assert.match(growthRecipes, /numeric `line`/);
+    assert.match(growthRecipes, /full UTC timestamp/);
+    assert.match(growthRecipes, /When `approximate` is true/);
+    assert.doesNotMatch(growthRecipes, /10,000/);
+    assert.doesNotMatch(growthRecipes, /20,000/);
     assert.match(growthRecipes, /The MCP tool is `errors`/);
     assert.match(growthRecipes, /Those aggregations are Pro/);
     assert.match(growthRecipes, /`errors` is Pro/);
