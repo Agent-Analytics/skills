@@ -41,8 +41,8 @@ Use it when you want an agent to:
 - read and maintain compact Project Context: goals, activation events, event-name glossary entries, and date annotations for major landing page, pricing, onboarding, feature, release, or experiment changes
 - configure cross-project identity stitching only when intentional, using both tracker `data-link-domains` and `portfolios create/update`
 - answer product analytics questions with a decision, metric definition, evidence, caveat, and one bounded next action
-- read Pro numeric aggregations with `query`, such as p75 of `lcp` (`--metrics p75 --property lcp`) or sum of `revenue` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`
-- read a shipped change with free `compare` on ship day + 8, pass `metric` and `better=lower` for vitals such as `p75(lcp)`, and run Pro `errors <project> --since 7d --new-since <ship date>` beside that compare
+- read Pro numeric aggregations with `query`, such as p75 of `cwv_lcp` on `$web_vitals` (`--metrics p75 --property cwv_lcp`) or sum of `revenue` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`
+- read a shipped change with free `compare` on ship day + 8, pass `metric` `p75(cwv_lcp)`, `--metric-event '$web_vitals'`, and `better=lower`, report `lift`, `raw_lift`, and window `value` (`extend` / `no_interval_for_metric` is not a keep or revert), and run Pro `errors <project> --since 7d --new-since <ship date>` beside that compare
 
 Copyable setup task:
 

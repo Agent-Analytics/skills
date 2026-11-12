@@ -1,6 +1,6 @@
 ---
 name: agent-analytics
-description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read numeric property metrics such as p75 of lcp or sum of revenue, read one shipped change on ship day + 8 with compare (metric and better=lower for vitals) plus an errors guardrail, then recommend the smallest growth action using the official Agent Analytics CLI."
+description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read numeric property metrics such as p75 of cwv_lcp on $web_vitals or sum of revenue, read one shipped change on ship day + 8 with compare (metric, metric_event, and better=lower for vitals) plus an errors guardrail, then recommend the smallest growth action using the official Agent Analytics CLI."
 version: 4.0.37
 author: dannyshmueli
 license: MIT
@@ -146,21 +146,21 @@ Portfolio surface-role diagnosis: identify each project's role in the growth sys
 
 ## Numeric property metrics
 
-Use `query` for a numeric property the fixed commands cannot aggregate. Metrics are `sum`, `avg`, `p50`, `p75`, and `p95`. `--property` is required with any of those metrics. A missing or invalid property key returns 400. Non-numeric and null values are ignored. Each row returns the metric you asked for, `n` (values used), and `skipped` (values ignored). Existing event filters, date ranges, filters, and `group_by` still apply. These aggregations are Pro, with the same gate as other `query` calls. If the CLI returns `PRO_REQUIRED`, use the paid-tier handoff, then rerun the command.
+Use `query` for a numeric property the fixed commands cannot aggregate. Metrics are `sum`, `avg`, `p50`, `p75`, and `p95`. `--property` is required with any of those metrics. The key must match `^[A-Za-z0-9_]+$` and be at most 128 characters. A missing property returns 400 `MISSING_FIELDS`. An invalid key returns 400 `INVALID_PROPERTY_KEY`. Only JSON numbers are aggregated. Numeric strings, booleans, nulls, and missing keys are skipped. Each row returns the metric you asked for, `n` (values used), and `skipped` (values ignored). `percentile_method` is `nearest_rank` when a percentile is requested and null for `sum` or `avg` only. Nearest-rank sorts ascending, breaks ties by event id, and picks rank `ceil(p/100 * n)`. A percentile over more than 20,000 filtered events returns 400. Existing event filters, date ranges, filters, and `group_by` still apply. These aggregations are Pro, with the same gate as other `query` calls. A free account gets 403 `PRO_REQUIRED` and the blocked call is not metered. If the CLI returns `PRO_REQUIRED`, use the paid-tier handoff, then rerun the command.
 
-Web Vitals example, p75 of `lcp`:
+Web Vitals LCP is the property `cwv_lcp` on event `$web_vitals`.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 query my-site --metrics p75 --property lcp
+npx --yes @agent-analytics/cli@0.5.40 query my-site --metrics p75 --property cwv_lcp --filter '[{"field":"event","op":"eq","value":"$web_vitals"}]'
 ```
 
 Revenue example. Record purchases as `aa.track('purchase', { revenue: 29, currency: 'USD' })`, then sum `revenue`. `29` and `USD` are the public example.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 query my-site --metrics sum --property revenue
+npx --yes @agent-analytics/cli@0.5.40 query my-site --metrics sum --property revenue --filter '[{"field":"event","op":"eq","value":"purchase"}]'
 ```
 
-MCP `query` takes `metrics` and `property`. Do not start broad growth diagnosis with `query`. Do not read a shipped change with `query`. Use `compare` for that read. `compare` with `metric` stays free.
+MCP `query` takes `metrics`, `property`, and `filters`. Do not start broad growth diagnosis with `query`. Do not read a shipped change with `query`. Use `compare` for that read. `compare` with `metric` stays free.
 
 ## Change read
 
@@ -173,8 +173,8 @@ When you ship a change, such as a landing page edit, read it once on ship day + 
 5. If the compare window may contain 404 or one-hit bot page views, for example right after sharing new URLs, rerun `compare` with `--exclude-denominator "properties.title=<404 page title>"` before trusting a revert. MCP `compare` sends that exclusion as `denominator_filters`: `[{"field":"properties.title","op":"neq","value":"<404 page title>"}]`. It applies only to the denominator.
 6. Name any other annotation whose `occurred_at` falls in either window. Those are confounds. A shift in traffic source can confound the read as well. Before/after is not causal.
 7. On a low-traffic site, prefer an upper-funnel rate: denominator event `page_view`, goal event a CTA click. Prefer that over a signup rate. Example defaults, not Agent Analytics policy: 200 denominator unique users per window, 20 goal converters across both windows, keep threshold `0.15` (+15% relative lift), revert threshold `-0.10` (-10% relative lift).
-8. When the shipped change is about a numeric property on the goal event, call the same free `compare` with `--metric` set to `sum(<prop>)`, `avg(<prop>)`, `p50(<prop>)`, `p75(<prop>)`, or `p95(<prop>)`, and `--better higher` or `--better lower`. Default `better` is `higher`. Set `--better lower` for `lcp`, `inp`, `cls`, `fcp`, and `ttfb`. Example: `--metric 'p75(lcp)' --better lower`. Revenue uses `--metric 'sum(revenue)'` with `--better higher` on the `purchase` event from `aa.track('purchase', { revenue: 29, currency: 'USD' })`. `sum(<prop>)` is the sum per unique denominator user and the response sets `per_user` to true. v1 returns `interval` null and `interval_method` `"none"`. If `n` in a window is below `min_goal_events` (default 20), the verdict is `extend` with reason `below_min_sample`. Otherwise the API keeps a lift of at least +10% in the `better` direction, reverts a lift of -10% or worse, and extends anything in between. Leave `metric` unset to keep the conversion-rate rules in step 4. MCP `compare` fields are `metric` and `better`. Worked commands are in the change read recipe.
-9. On that same day, run `errors <project> --since 7d --new-since <ship date>` beside `compare`. The MCP tool is `errors`. `new_since` is the ship date (`YYYY-MM-DD`) or an annotation id or title. A group has `new_since` true when `first_seen` is on or after that date. `first_seen` uses full retention, not only the `--since` window. An ambiguous annotation reference returns 400 and lists the matches. Report groups with `new_since` true next to `verdict` and `reason`. They do not replace the verdict.
+8. When the shipped change is about a numeric property, call the same free `compare` with `--metric` set to `sum(<prop>)`, `avg(<prop>)`, `p50(<prop>)`, `p75(<prop>)`, or `p95(<prop>)`. `--metric-event` is the event that carries the property. It defaults to the goal event. Set it when they differ. LCP is `p75(cwv_lcp)` on `$web_vitals`: `--metric 'p75(cwv_lcp)' --metric-event '$web_vitals' --better lower`. Revenue on the `purchase` event from `aa.track('purchase', { revenue: 29, currency: 'USD' })` uses `--metric 'sum(revenue)' --better higher` and can omit `--metric-event`. Default `better` is `higher`. Set `better` to `lower` for `cwv_lcp` and the other Web Vitals properties. The property name does not select the direction. `sum(<prop>)` is the sum per unique denominator user and sets `per_user` to true. `avg` and percentiles set `per_user` to false. v1 returns `interval` null and `interval_method` `"none"`. `lift` is `(compare value - baseline value) / baseline value`, negated when `better` is `lower`. `raw_lift` is that ratio before the negation. `--min-goal-events` counts `n` on `metric_event` across both windows (default 20), not unique converters. Below that minimum, or below `min_denominator` in either window, the verdict is `extend` with reason `below_min_sample`. When `lift` meets `keep_threshold` or `revert_threshold`, the verdict is `extend` with reason `no_interval_for_metric`. When `lift` is between the thresholds, the verdict is `extend` with reason `no_evidence_of_gain`. Report `lift`, `raw_lift`, and each window's `value`, `n`, and `skipped`. `no_interval_for_metric` is not a keep and it is not a revert. Leave `metric` unset to keep the conversion-rate rules in step 4. MCP `compare` fields are `metric`, `metric_event`, and `better`. Worked commands are in the change read recipe.
+9. On that same day, run `errors <project> --since 7d --new-since <ship date>` beside `compare`. The MCP tool is `errors`. A free account gets 403 `PRO_REQUIRED` and that blocked call is not metered. A successful call is one metered read. `$error` stores `message`, `source`, `line`, and `col`, and it has no stack. The fingerprint is the SHA-256 of the normalized message, the source filename, and `line`. `new_since` is a `YYYY-MM-DD` date or annotation text. A group has `new_since` true when `first_seen` is on or after that date. `first_seen` and `last_seen` use every stored `$error` for that fingerprint, not only the `--since` window. Zero annotation matches returns 400. More than one match returns 400 and lists `matches`. Report groups with `new_since` true next to `lift`, `raw_lift`, and the window values. They do not replace those numbers.
 
 ## Analytics answer contract
 
@@ -205,7 +205,7 @@ Load references only when they are needed:
 
 - `references/setup-auth.md`: login modes, managed-runtime storage, paid-tier handoff, and safe command examples.
 - `references/product-analytics-operating-model.md`: projects/surfaces/portfolios, consent-based instrumentation, context upkeep, and verification.
-- `references/growth-recipes.md`: AARRR, Bullseye, AIDA, STP, JTBD, 4Ps, funnel/retention/experiment recipes, the change read recipe (including `metric`, `better=lower` for vitals, and the `errors` guardrail), and copyable prompts.
+- `references/growth-recipes.md`: AARRR, Bullseye, AIDA, STP, JTBD, 4Ps, funnel/retention/experiment recipes, the change read recipe (including `metric`, `metric_event`, `better=lower` for `cwv_lcp`, `no_interval_for_metric`, and the `errors` guardrail), and copyable prompts.
 
 ## Pitfalls
 
@@ -216,7 +216,7 @@ Load references only when they are needed:
 - Do not answer with raw-number dumps; use the analytics answer contract.
 - Do not rank channels by signups alone, claim strict user conversion across projects without configured identity, or infer causality from correlation.
 - Do not approximate paid-only reads if the user does not upgrade.
-- Do not read a shipped change with `query`, `funnel`, or `insights`. Use `compare`. It is free on all plans and costs one read per call. For a numeric property on the goal event, pass `metric` on that `compare`, and set `better` to `lower` for `lcp`, `inp`, `cls`, `fcp`, and `ttfb`.
+- Do not read a shipped change with `query`, `funnel`, or `insights`. Use `compare`. It is free on all plans and costs one read per call. For a numeric property, pass `metric` on that `compare`, and pass `--metric-event` when that event is not the goal. LCP is `cwv_lcp` on `$web_vitals` with `better` `lower`. Report `lift`, `raw_lift`, and window `value`. Reason `no_interval_for_metric` is not a keep or a revert.
 - Do not skip `errors` after a ship. Run `errors <project> --since 7d --new-since <ship date>` beside `compare`.
 - Do not treat `query` numeric aggregations or `errors` as free. They are Pro. `compare`, including `compare` with `metric`, stays free.
 

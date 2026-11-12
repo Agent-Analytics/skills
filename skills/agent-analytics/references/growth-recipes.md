@@ -100,13 +100,13 @@ Pass thresholds as fractions on the nested `rule`. `0.15` = +15% relative lift. 
 
 `--denominator` defaults to `page_view`. Do not put `event` in `--filter`. Pass `--goal` and `--denominator`.
 
-CLI flags: `--goal`, `--denominator`, `--ship-date`, `--days`, `--keep-threshold`, `--revert-threshold`, `--min-denominator` (denominator unique users required in each window), `--min-goal-events` (goal converters required across both windows), `--exclude-denominator`, `--filter`, `--json`. For a numeric property on the goal event, also pass `--metric` and `--better`. Leave them unset for the conversion-rate read.
+CLI flags: `--goal`, `--denominator`, `--ship-date`, `--days`, `--keep-threshold`, `--revert-threshold`, `--min-denominator` (denominator unique users required in each window), `--min-goal-events` (goal converters required across both windows), `--exclude-denominator`, `--filter`, `--json`. For a numeric property, also pass `--metric` and `--better`, and `--metric-event` when the measured event is not the goal. Leave them unset for the conversion-rate read.
 
 `--keep-threshold`, `--revert-threshold`, `--min-denominator`, and `--min-goal-events` are sent as `rule.keep_threshold`, `rule.revert_threshold`, `rule.min_denominator`, and `rule.min_goal_events`. They are not top-level fields. There is no `min_visitors` field.
 
 Or pass explicit windows and omit `--ship-date` and `--days`: `--baseline-from`, `--baseline-to`, `--compare-from`, `--compare-to`. Each window is `date_from` and `date_to`. Do not combine explicit windows with `--ship-date` or `--days`.
 
-MCP `compare` fields: `project`, `goal_event`, optional `denominator_event` (default `page_view`), `filters`, optional `denominator_filters`, optional `metric`, optional `better` (`higher` or `lower`, default `higher`), and either `ship_date` plus `window_days` or `baseline` and `compare` windows (`date_from`, `date_to`). Optional nested `rule`: `keep_threshold`, `revert_threshold`, `min_denominator`, `min_goal_events`. Thresholds are not top-level.
+MCP `compare` fields: `project`, `goal_event`, optional `denominator_event` (default `page_view`), `filters`, optional `denominator_filters`, optional `metric`, optional `metric_event` (default `goal_event`), optional `better` (`higher` or `lower`, default `higher`), and either `ship_date` plus `window_days` or `baseline` and `compare` windows (`date_from`, `date_to`). Optional nested `rule`: `keep_threshold`, `revert_threshold`, `min_denominator`, `min_goal_events`. Thresholds are not top-level.
 
 If the compare window may contain 404 or one-hit bot page views, for example right after sharing new URLs, rerun `compare` before trusting a revert. `--exclude-denominator` is repeatable. Each `field=value` is `{field, op: "neq", value}` and applies only to denominator events. MCP `denominator_filters` is that array. Existing `filters` stay unchanged.
 
@@ -149,24 +149,30 @@ Example defaults, not Agent Analytics policy: 200 denominator unique users per w
 
 ## Numeric property compare
 
-Use this when the shipped change should move a numeric property on the goal event, such as p75 of `lcp` or sum of `revenue`. `compare` stays free on all plans and still costs one read per call. Leave `metric` unset to keep the conversion-rate read above, including its 90% interval rules. Do not use `query` for this read.
+Use this when the shipped change should move a numeric property, such as p75 of `cwv_lcp` on `$web_vitals` or sum of `revenue`. `compare` stays free on all plans and still costs one read per call. Leave `metric` unset to keep the conversion-rate read above, including its 90% interval rules and its keep or revert verdict. Do not use `query` for this read.
 
-`--metric` is one of `sum(<prop>)`, `avg(<prop>)`, `p50(<prop>)`, `p75(<prop>)`, or `p95(<prop>)`. `--better` is `higher` or `lower`. The default is `higher`. Set `--better lower` for the Web Vitals `lcp`, `inp`, `cls`, `fcp`, and `ttfb`. Pass `better` explicitly. The property name does not select the direction.
+`--metric` is one of `sum(<prop>)`, `avg(<prop>)`, `p50(<prop>)`, `p75(<prop>)`, or `p95(<prop>)`. `--metric-event` is the event whose property is measured. It defaults to the goal event. Set it when they differ. `--better` is `higher` or `lower`. The default is `higher`. Set `--better lower` for `cwv_lcp` and the other Web Vitals properties. Pass `better` explicitly. The property name does not select the direction.
 
-`sum(<prop>)` compares the sum divided by unique denominator users, so windows of unequal size stay comparable. The response sets `per_user` to true. `avg`, `p50`, `p75`, and `p95` compare that property on the goal event. Denominator exclusions still apply.
+`sum(<prop>)` compares the sum divided by unique denominator users, so windows of unequal size stay comparable. The response sets `per_user` to true. `avg` and percentiles compare the aggregate itself and set `per_user` to false. Shared filters apply to the metric event. Denominator exclusions still apply only to the denominator. Percentiles are nearest-rank, and `percentile_method` is `nearest_rank`.
 
-Each window reports the metric value, lift percent, and `n`. v1 sets `interval` to null and `interval_method` to `none`. If `n` is below `min_goal_events` (default 20) in a window, `verdict` is `extend` and `reason` is `below_min_sample`. Otherwise `keep` when lift is at least +10% in the `better` direction, `revert` when lift is -10% or worse, and `extend` otherwise. Metric mode does not use `keep_threshold` or `revert_threshold`. Report `verdict` and `reason`. Do not compute the verdict yourself.
+Each window still includes the conversion counts and `rate`, plus `value`, `n`, and `skipped`. `lift` is `(compare value - baseline value) / baseline value`, negated when `better` is `lower`, so the written thresholds keep the same meaning. `raw_lift` is that ratio before the negation. v1 sets `interval` to null and `interval_method` to `none`.
 
-The goal event for `lcp` is the event that carries that property. Revenue uses goal event `purchase` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`. `29` and `USD` are the public example.
+With `metric` set, `--min-goal-events` is `n` on `metric_event` across both windows, not unique converters. Default 20. `min_denominator` is still unique denominator users in each window. Default 200. If `n` across both windows is under `min_goal_events`, or either window is under `min_denominator`, `verdict` is `extend` and `reason` is `below_min_sample`. A missing compare `value`, or a baseline of 0 or null, is `extend` with reason `zero_baseline` and `lift` null. `incomplete_current_day`, `below_min_sample`, `zero_denominator`, and `zero_baseline` still apply before the threshold check.
+
+v1 does not return `keep` or `revert` for a metric compare. When `lift` meets `keep_threshold` or `revert_threshold`, `verdict` is `extend` and `reason` is `no_interval_for_metric`. When `lift` is between the thresholds, `verdict` is `extend` and `reason` is `no_evidence_of_gain`. Report `verdict`, `reason`, `lift`, `raw_lift`, and each window's `value`, `n`, and `skipped`. `no_interval_for_metric` means the threshold was met and v1 has no interval. It is not a keep and it is not a revert. Do not compute the verdict yourself.
+
+Public shape: baseline `value` 2400 and compare `value` 1200 with `better` `lower` give `raw_lift` -0.5 and `lift` 0.5. If that `lift` meets `keep_threshold` 0.15, `reason` is `no_interval_for_metric` and `verdict` is `extend`.
+
+LCP uses goal event `signup` and metric event `$web_vitals` with property `cwv_lcp`. Revenue uses goal event `purchase` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`, so `metric_event` stays the goal. `29` and `USD` are the public example.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.40 compare my-site --ship-date 2026-04-08 --days 7 --goal <goal_event> --metric 'p75(lcp)' --better lower --min-goal-events 20
-npx --yes @agent-analytics/cli@0.5.40 compare my-site --ship-date 2026-04-08 --days 7 --goal purchase --metric 'sum(revenue)' --better higher --denominator page_view --min-goal-events 20
+npx --yes @agent-analytics/cli@0.5.40 compare my-site --ship-date 2026-04-08 --days 7 --goal signup --metric 'p75(cwv_lcp)' --metric-event '$web_vitals' --better lower --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
+npx --yes @agent-analytics/cli@0.5.40 compare my-site --ship-date 2026-04-08 --days 7 --goal purchase --metric 'sum(revenue)' --better higher --denominator page_view --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
 ```
 
-MCP `compare` sends `metric` `p75(lcp)` and `better` `lower` for the vitals example, or `metric` `sum(revenue)` and `better` `higher` for the revenue example.
+MCP `compare` sends `metric` `p75(cwv_lcp)`, `metric_event` `$web_vitals`, and `better` `lower` for the vitals example, or `metric` `sum(revenue)` and `better` `higher` for the revenue example.
 
-A point-in-time p75 or sum, outside this before/after read, uses `query` with `--metrics` and `--property`. Those aggregations are Pro.
+A point-in-time p75 of `cwv_lcp` on `$web_vitals`, outside this before/after read, uses `query` with `--metrics p75 --property cwv_lcp` and an event filter for `$web_vitals`. Those aggregations are Pro.
 
 ## Errors guardrail
 
@@ -176,13 +182,13 @@ After each ship, run `errors` on the same day as `compare`. `errors` is Pro and 
 npx --yes @agent-analytics/cli@0.5.40 errors my-site --since 7d --new-since 2026-04-08
 ```
 
-That is `errors <project> --since 7d --new-since <ship date>`. `--since` is the activity window for counts. `--new-since` marks groups first seen on or after the ship. Pass both. The MCP tool is `errors`. Fields: `project`, `since`, `new_since`, optional `until`, and optional `limit` (default 20, maximum 100).
+That is `errors <project> --since 7d --new-since <ship date>`. `--since` defaults to 7 days and bounds `count`, `users`, `sessions`, and `top_paths`. `--new-since` marks groups first seen on or after the ship. Pass both. The MCP tool is `errors`. Fields: `project`, `since`, `new_since`, optional `until` (defaults to today UTC), and optional `limit` (default 20, maximum 100). A project with more than 10,000 stored `$error` rows returns 400.
 
-`new_since` is the ship date (`YYYY-MM-DD`) or an annotation id or title. A group has `new_since` true when `first_seen` is on or after that date. `first_seen` uses full retention, not only the `--since` window. An ambiguous annotation reference returns 400 and lists the matches.
+`new_since` is a `YYYY-MM-DD` date or other annotation text. A date is used directly. Other text matches project annotations in order: exact title, case-insensitive title, note, then substring. A group has `new_since` true when `first_seen` is on or after that date. The group field is present only when the parameter is set. `first_seen` and `last_seen` use every stored `$error` for that fingerprint, not only the `--since` window. Zero matches returns 400. More than one match returns 400 and lists `matches` with `occurred_at` and `title`.
 
-The group key is a fingerprint of the normalized `$error` message (numbers, hex hashes, and URL query strings removed), the source filename without a query or hash, and the top stack frame when the payload has one. Each group includes `fingerprint`, `message` (one raw sample), `source`, `count`, `users`, `sessions`, `first_seen`, `last_seen`, and `top_paths` (at most 3).
+`$error` stores `message`, `source`, `line`, and `col`. It has no stack. The fingerprint is the SHA-256 hex of the normalized message (URL query strings and hashes removed, then UUIDs, hex hashes, and numbers replaced), the source filename without a query or hash, and numeric `line`. `col` is not part of the key. Each group includes `fingerprint`, `message` (one raw sample), `source`, `line`, `count`, `users`, `sessions`, `first_seen`, `last_seen`, and `top_paths` (at most 3).
 
-Treat groups with `new_since` true as the ship guardrail. Report them beside `verdict` and `reason`. They do not replace the verdict.
+Treat groups with `new_since` true as the ship guardrail. Report them beside `lift`, `raw_lift`, and the window values. They do not replace those numbers.
 
 ## Copyable prompt
 

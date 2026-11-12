@@ -137,7 +137,7 @@ npx --yes @agent-analytics/cli@0.5.40 events "$PROJECT_SLUG" --event "$PRIMARY_E
 npx --yes @agent-analytics/cli@0.5.40 experiments list "$PROJECT_SLUG"
 ```
 
-A post-ship or post-experiment read uses the regular `agent-analytics` skill's change read. `compare` is free. Pass `metric` `p75(lcp)` with `better` `lower` for `lcp`, `inp`, `cls`, `fcp`, and `ttfb`, or `metric` `sum(revenue)` with `better` `higher`. Beside that compare, run:
+A post-ship or post-experiment read uses the regular `agent-analytics` skill's change read. `compare` is free. Pass `metric` `p75(cwv_lcp)` with `metric_event` `$web_vitals` and `better` `lower`. LCP is the property `cwv_lcp` on `$web_vitals`. Or pass `metric` `sum(revenue)` with `better` `higher` when the goal event is `purchase`. In v1 a threshold hit returns `extend` with reason `no_interval_for_metric`. Report `lift`, `raw_lift`, and window `value`. That reason is not a keep or a revert. Beside that compare, run:
 
 ```bash
 npx --yes @agent-analytics/cli@0.5.40 errors "$PROJECT_SLUG" --since 7d --new-since <ship date>
