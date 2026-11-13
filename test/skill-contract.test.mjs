@@ -34,7 +34,7 @@ const operatingModel = readFileSync(
 
 describe('agent-analytics skill contract', () => {
   it('pins the official CLI to 0.5.41 everywhere', () => {
-    assert.match(skill, /version: 4\.0\.40/);
+    assert.match(skill, /version: 4\.0\.41/);
     assert.ok(skill.includes('npx --yes @agent-analytics/cli@0.5.41'));
     assert.ok(readme.includes('npx --yes @agent-analytics/cli@0.5.41'));
     assert.match(autoresearchSkill, /version: 1\.0\.13/);
@@ -649,12 +649,17 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /CLI `--from` and `--to` set `date_from` and `date_to`/);
     assert.match(skill, /one `SELECT`/);
     assert.match(skill, /starts with `WITH` is rejected/);
-    assert.match(skill, /At most 2 references to `events` or `sessions`/);
-    assert.match(skill, /A third reference is 400 `INVALID_SQL`/);
+    assert.match(skill, /Each of `events` and `sessions` may be referenced at most once per statement/);
+    assert.match(skill, /One `events`-`sessions` join is fine/);
+    assert.match(skill, /A self-join is 400 `INVALID_SQL`/);
+    assert.match(skill, /A `LIMIT` must be a plain integer/);
+    assert.match(skill, /LIMIT 100/);
     assert.match(skill, /One query at a time per account/);
     assert.match(skill, /429 `SQL_BUSY` with `Retry-After`/);
     assert.match(skill, /429 `SQL_COOLDOWN` with `Retry-After`/);
-    assert.match(skill, /On `SQL_BUSY` or `SQL_COOLDOWN`, wait for `Retry-After` instead of retrying in a loop/);
+    assert.match(skill, /SQL_UPSTREAM_RATE_LIMITED/);
+    assert.match(skill, /On `SQL_BUSY`, `SQL_COOLDOWN`, or `SQL_UPSTREAM_RATE_LIMITED`, wait for `Retry-After` instead of retrying in a loop/);
+    assert.doesNotMatch(skill, /at most 2 references|at most twice|third reference/i);
     assert.match(skill, /`events` columns: `id`, `event`, `properties`, `user_id`, `session_id`, `timestamp`, `date`, `country`/);
     assert.match(skill, /`sessions` columns: `session_id`, `user_id`, `project_id`, `start_time`, `end_time`, `duration`, `entry_page`, `exit_page`, `event_count`, `is_bounce`, `date`/);
     assert.match(skill, /`resolved_user_id` is not a column/);
@@ -673,10 +678,13 @@ describe('agent-analytics skill contract', () => {
     assert.match(readme, /MCP `run_sql` or CLI `aa sql`/);
     assert.match(readme, /analytics_breakdown/);
     assert.match(readme, /`days` default 7, max 90/);
-    assert.match(readme, /at most 2 references to `events` or `sessions`/);
-    assert.match(readme, /one query at a time per account/);
+    assert.match(readme, /Each of `events` and `sessions` may be referenced at most once/);
+    assert.match(readme, /one join is fine, no self-join/);
+    assert.match(readme, /A `LIMIT` must be a plain integer/);
+    assert.match(readme, /One query at a time per account/);
     assert.match(readme, /at most 1,000 rows, and is Pro/);
-    assert.match(readme, /On `SQL_BUSY` or `SQL_COOLDOWN`, wait for `Retry-After` instead of retrying in a loop/);
+    assert.match(readme, /On `SQL_BUSY`, `SQL_COOLDOWN`, or `SQL_UPSTREAM_RATE_LIMITED`, wait for `Retry-After` instead of retrying in a loop/);
+    assert.doesNotMatch(readme, /at most 2 references|at most twice/i);
     assert.doesNotMatch(readme, /—|–/);
   });
 });
