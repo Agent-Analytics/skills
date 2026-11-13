@@ -144,6 +144,22 @@ Funnel analyst behavior: name the population and conversion window, show counts 
 
 Portfolio surface-role diagnosis: identify each project's role in the growth system, then read project-local metrics against that role. Do not reuse one activation definition across app, docs, directory, landing page, or lead-gen projects unless the user explicitly defines it.
 
+## Subject erasure
+
+`erase_subject` and `aa erase` delete one subject's data permanently. Run them only when the user explicitly asked to delete a specific person. Subject erasure is never part of the default analytics loop. Do not call it from funnel, path, retention, experiment, vitals, compare, context, or growth-diagnosis work.
+
+The call needs `confirm` set to the exact string `erase`, exactly one subject, and an idempotency key. The subject is one of `user_id`, `session_id`, or `email`. A missing confirm, two subjects, an empty subject, or a subject longer than 256 characters returns 400 `INVALID_ERASURE`. Pass `--idempotency-key`. If you omit it, the CLI generates a key and prints it. Keep that printed key and reuse it for a retry of the same erase. A different subject needs a new key. The same key with the same body returns the original job.
+
+```bash
+npx --yes @agent-analytics/cli@0.5.41 erase my-site --user-id <user_id> --confirm erase --idempotency-key <key>
+```
+
+`--session-id` or `--email` replaces `--user-id`. Pass exactly one.
+
+Agent sessions need the opt-in scope `erasures:write`. It is not in the default agent scopes. `analytics:read` and `projects:write` are not enough. MCP `erase_subject` is registered only when the session includes `erasures:write`, and it is not in the demo MCP. Without that scope the call returns 403 `FORBIDDEN_SCOPE`. A browser-approved CLI session may call `erase`. Do not switch to MCP just to erase.
+
+Report the receipt id and the counts back. The receipt id is `id` (`era_...`). Report `counts`: `events`, `sessions`, `identity_rows`, `profiles`, `email_lookups`, `replay_sessions`, and `replay_objects`. If `status` is not `completed`, say so and do not invent counts. Read the finished receipt with `erasures get <id>`. Do not repeat the raw subject (`user_id`, `session_id`, or `email`) in the report.
+
 ## Web Vitals
 
 For any Web Vitals or page speed question, the first read is the vitals read. CLI: `vitals <project> [--days N] [--from] [--to] [--by device|path] [--limit N] [--json]`. MCP: `web_vitals`. API: `POST /vitals` (GET with the same query params is ok). Args: `project`, `days`, `date_from`, `date_to`, `group_by` (`device` or `path`), `limit` (default 10, max 20). The event is fixed to `page_view`. It is Pro and costs one read per call. A free account gets 403 `PRO_REQUIRED` and that blocked call is not metered. Do not start this question with `query`. A shipped-change before/after still uses free `compare`.
@@ -267,6 +283,7 @@ Load references only when they are needed:
 
 ## Pitfalls
 
+- Do not run `erase_subject` or `aa erase` unless the user explicitly asked to delete a specific person. The delete is permanent and is never part of the default analytics loop.
 - Do not use URL-only assumptions instead of code inspection when repo access exists.
 - Do not create a project for every subdomain, localhost URL, staging URL, or preview.
 - Do not install generic click/pageview duplicates for automatic tracker signals.

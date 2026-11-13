@@ -64,6 +64,8 @@ Use `login --detached` only for Paperclip, OpenClaw, issue-based or headless run
 
 For paid-tier blocks, run the intended command first. If the CLI returns `PRO_REQUIRED` or a free-tier read cap, use the CLI upgrade handoff. The dashboard page first confirms the same account as the CLI, explains that the requested task needs Pro, and then opens payment. The full command and private analysis context stay in the agent session. `query` numeric aggregations and `errors` are Pro. `compare`, including `compare` with `metric`, stays free on all plans.
 
+Subject erasure is not an analytics read. `aa erase` and MCP `erase_subject` delete one person's data permanently. Run them only when the user explicitly asked to delete that person. The call needs `confirm` `erase`, exactly one subject (`user_id`, `session_id`, or `email`), and an idempotency key. Agent sessions need the opt-in scope `erasures:write`. Erasure is never part of the default analytics loop. Report the receipt id and counts back.
+
 ### `agent-analytics-autoresearch`
 
 The Autoresearch skill runs a structured growth loop for landing pages, onboarding, pricing, CTAs, signup, checkout, activation, and experiment candidates.
