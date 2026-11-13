@@ -561,10 +561,16 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /`analytics:read` and `projects:write` are not enough/);
     assert.match(skill, /registered only when the session includes `erasures:write`/);
     assert.match(skill, /not in the demo MCP/);
-    assert.match(skill, /403 `FORBIDDEN_SCOPE`/);
+    assert.match(skill, /403 `FORBIDDEN`/);
+    assert.match(skill, /agent session missing required scope: erasures:write/);
+    assert.doesNotMatch(skill, /FORBIDDEN_SCOPE/);
+    assert.match(skill, /429 `RATE_LIMITED` with reason `erasure_rate_limit`/);
+    assert.match(skill, /hourly cap is 20 accepts per account/);
     assert.match(skill, /Do not switch to MCP just to erase/);
     assert.match(skill, /Report the receipt id and the counts back/);
     assert.match(skill, /receipt id is `id` \(`era_\.\.\.`\)/);
+    assert.match(skill, /`status` is `pending`, `running`, `completed`, or `failed`/);
+    assert.doesNotMatch(skill, /processing/);
     assert.match(skill, /`events`, `sessions`, `identity_rows`, `profiles`, `email_lookups`, `replay_sessions`, and `replay_objects`/);
     assert.match(skill, /If `status` is not `completed`, say so and do not invent counts/);
     assert.match(skill, /erasures get <id>/);

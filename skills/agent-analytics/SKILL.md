@@ -156,9 +156,9 @@ npx --yes @agent-analytics/cli@0.5.41 erase my-site --user-id <user_id> --confir
 
 `--session-id` or `--email` replaces `--user-id`. Pass exactly one.
 
-Agent sessions need the opt-in scope `erasures:write`. It is not in the default agent scopes. `analytics:read` and `projects:write` are not enough. MCP `erase_subject` is registered only when the session includes `erasures:write`, and it is not in the demo MCP. Without that scope the call returns 403 `FORBIDDEN_SCOPE`. A browser-approved CLI session may call `erase`. Do not switch to MCP just to erase.
+Agent sessions need the opt-in scope `erasures:write`. It is not in the default agent scopes. `analytics:read` and `projects:write` are not enough. MCP `erase_subject` is registered only when the session includes `erasures:write`, and it is not in the demo MCP. An agent session without that scope returns 403 `FORBIDDEN` with message `agent session missing required scope: erasures:write`. A browser-approved CLI session may call `erase`. Do not switch to MCP just to erase. The hourly cap is 20 accepts per account. Past that cap the call returns 429 `RATE_LIMITED` with reason `erasure_rate_limit`.
 
-Report the receipt id and the counts back. The receipt id is `id` (`era_...`). Report `counts`: `events`, `sessions`, `identity_rows`, `profiles`, `email_lookups`, `replay_sessions`, and `replay_objects`. If `status` is not `completed`, say so and do not invent counts. Read the finished receipt with `erasures get <id>`. Do not repeat the raw subject (`user_id`, `session_id`, or `email`) in the report.
+Report the receipt id and the counts back. The receipt id is `id` (`era_...`). `status` is `pending`, `running`, `completed`, or `failed`. Report `counts`: `events`, `sessions`, `identity_rows`, `profiles`, `email_lookups`, `replay_sessions`, and `replay_objects`. If `status` is not `completed`, say so and do not invent counts. Read the finished receipt with `erasures get <id>`. Do not repeat the raw subject (`user_id`, `session_id`, or `email`) in the report.
 
 ## Web Vitals
 
