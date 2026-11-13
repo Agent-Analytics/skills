@@ -1,7 +1,7 @@
 ---
 name: agent-analytics
 description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read Web Vitals or page speed with the Pro vitals read (p75 headline, rating, and cwv_pass), read numeric property metrics such as sum of revenue, group one query by a single properties.<key>, use read-only SQL (run_sql or aa sql) only when query or breakdown cannot express it, read one shipped change on ship day + 8 with compare (metric, metric_event page_view, and better=lower for vitals) plus an errors guardrail, then recommend the smallest growth action using the official Agent Analytics CLI."
-version: 4.0.39
+version: 4.0.40
 author: dannyshmueli
 license: MIT
 repository: https://github.com/Agent-Analytics/skills
@@ -204,14 +204,16 @@ MCP `query` takes `metrics`, `property`, `filters`, and `group_by`. `group_by` i
 
 ## Read-only SQL
 
-Use `query` or `breakdown` (MCP `analytics_breakdown`) first. Use SQL only when those cannot express the question, such as a join or a subquery. MCP tool `run_sql`. CLI command `aa sql`. API `POST /sql`. It is Pro. A free account gets 403 `PRO_REQUIRED` and that blocked call is not metered. `run_sql` is not registered on the demo MCP.
+Prefer `query` and `analytics_breakdown` (CLI `breakdown`). Use MCP `run_sql` or CLI `aa sql` only when those cannot express the question, such as a join. API `POST /sql`. It is Pro. A free account gets 403 `PRO_REQUIRED` and that blocked call is not metered. `run_sql` is not registered on the demo MCP.
+
+SQL covers a time window, so pass `days` or a date range. `days` defaults to 7 and maxes at 90. `date_from` and `date_to` are `YYYY-MM-DD`, and the span is at most 90 days. A bad window is 400 `INVALID_WINDOW`. The response `window` has `date_from` and `date_to`. The server applies the window, so rows outside it are not returned.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 sql my-site --sql 'SELECT e.date, s.entry_page, COUNT(*) AS n FROM events e JOIN sessions s ON s.session_id = e.session_id GROUP BY e.date, s.entry_page'
-npx --yes @agent-analytics/cli@0.5.41 sql my-site -f query.sql
+npx --yes @agent-analytics/cli@0.5.41 sql my-site --days 7 --sql 'SELECT e.date, s.entry_page, COUNT(*) AS n FROM events e JOIN sessions s ON s.session_id = e.session_id GROUP BY e.date, s.entry_page'
+npx --yes @agent-analytics/cli@0.5.41 sql my-site --from 2026-04-01 --to 2026-04-07 -f query.sql
 ```
 
-Pass the statement with `--sql` or `-f`. v1 accepts one `SELECT`. A statement that starts with `WITH` is rejected. The server exposes only this project's rows. `properties` is a JSON string. `resolved_user_id` is not a column. `events` has no `project_id` column. `sessions.project_id` is the project name.
+Pass the statement with `--sql` or `-f`. CLI `--days` sets `days`. CLI `--from` and `--to` set `date_from` and `date_to`. v1 accepts one `SELECT`. A statement that starts with `WITH` is rejected. At most 2 references to `events` or `sessions`. A third reference is 400 `INVALID_SQL`. One query at a time per account. If one is already running, the call is 429 `SQL_BUSY` with `Retry-After`. A heavy read can return 429 `SQL_COOLDOWN` with `Retry-After`. On `SQL_BUSY` or `SQL_COOLDOWN`, wait for `Retry-After` instead of retrying in a loop. The server exposes only this project's rows. `properties` is a JSON string. `resolved_user_id` is not a column. `events` has no `project_id` column. `sessions.project_id` is the project name.
 
 - `events` columns: `id`, `event`, `properties`, `user_id`, `session_id`, `timestamp`, `date`, `country`
 - `sessions` columns: `session_id`, `user_id`, `project_id`, `start_time`, `end_time`, `duration`, `entry_page`, `exit_page`, `event_count`, `is_bounce`, `date`
@@ -276,7 +278,7 @@ Load references only when they are needed:
 - Do not read hosted Web Vitals from `$web_vitals`. Hosted `cwv_*` keys are on `page_view`.
 - Do not skip `errors` after a ship. Run `errors <project> --since 7d --new-since <ship date>` beside `compare`.
 - Do not treat `vitals`, `query` numeric aggregations, or `errors` as free. They are Pro. `compare`, including `compare` with `metric`, stays free.
-- Do not start with `run_sql` or `aa sql`. Use `query` or `breakdown` first. SQL is only when those cannot express the question. SQL is Pro and returns at most 1,000 rows.
+- Do not start with `run_sql` or `aa sql`. Prefer `query` and `analytics_breakdown`. Pass `days` or a date range. At most 2 references to `events` or `sessions`. One query at a time per account. On `SQL_BUSY` or `SQL_COOLDOWN`, wait for `Retry-After` instead of retrying in a loop. SQL is Pro and returns at most 1,000 rows.
 
 ## Verification
 
