@@ -43,6 +43,7 @@ Use it when you want an agent to:
 - answer product analytics questions with a decision, metric definition, evidence, caveat, and one bounded next action
 - read Web Vitals or page speed with the Pro vitals read first: CLI `vitals`, MCP `web_vitals`, API `POST /vitals`. p75 is the headline. Hosted stores `cwv_*` on `page_view`. Self-hosted core stores `$web_vitals`. `cwv_pass` is true when LCP, INP, and CLS p75 are all good
 - read Pro numeric aggregations with `query`, such as sum of `revenue` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`. For a custom property, check `properties_received` for the event that carries the key
+- group one `query` by a single `properties.<key>` plus `event`, `date`, `user_id`, `session_id`, or `country`. Use MCP `run_sql` or CLI `aa sql` only when `query` or `breakdown` (`analytics_breakdown`) cannot express the question. SQL reads `events` and `sessions`, returns at most 1,000 rows, and is Pro
 - read a shipped change with free `compare` on ship day + 8, pass `metric` `p75(cwv_lcp)`, `--metric-event page_view` on hosted, and `better=lower`, report `lift`, `raw_lift`, and window `value` (`extend` / `no_interval_for_metric` is not a keep or revert), and run Pro `errors <project> --since 7d --new-since <ship date>` beside that compare
 
 Copyable setup task:

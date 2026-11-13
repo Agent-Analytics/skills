@@ -34,7 +34,7 @@ const operatingModel = readFileSync(
 
 describe('agent-analytics skill contract', () => {
   it('pins the official CLI to 0.5.41 everywhere', () => {
-    assert.match(skill, /version: 4\.0\.38/);
+    assert.match(skill, /version: 4\.0\.39/);
     assert.ok(skill.includes('npx --yes @agent-analytics/cli@0.5.41'));
     assert.ok(readme.includes('npx --yes @agent-analytics/cli@0.5.41'));
     assert.match(autoresearchSkill, /version: 1\.0\.13/);
@@ -606,5 +606,56 @@ describe('agent-analytics skill contract', () => {
     assert.match(growthRecipes, /2500\/4000 ms/);
     assert.match(growthRecipes, /top_poor_targets/);
     assert.match(growthRecipes, /vitals my-site --days 7 --by device/);
+  });
+
+  it('teaches one property group-by on query and read-only SQL as an escape hatch', () => {
+    assert.match(skill, /`group_by` may include `event`, `date`, `user_id`, `session_id`, and `country`, plus at most one `properties\.<key>`/);
+    assert.match(skill, /same rule as a `properties\.<key>` filter/);
+    assert.match(skill, /\^\[A-Za-z0-9_\]\+\$/);
+    assert.match(skill, /at most 128 characters/);
+    assert.match(skill, /Dots and hyphens are not allowed in the key/);
+    assert.match(skill, /400 `INVALID_PROPERTY_KEY`/);
+    assert.match(skill, /second `properties\.\*` entry returns 400 `INVALID_GROUP_BY`/);
+    assert.match(skill, /under the key exactly `properties\.<key>`/);
+    assert.match(skill, /null or missing property groups as null/);
+    assert.match(skill, /including Pro numeric metrics/);
+    assert.match(skill, /row limit stays capped at 1,000/);
+    assert.match(skill, /`query` stays Pro/);
+    assert.match(skill, /--group-by properties\.path/);
+    assert.match(skill, /--group-by date,properties\.path/);
+    assert.match(skill, /\["date", "properties\.path"\]/);
+    assert.match(skill, /MCP `analytics_breakdown`/);
+    assert.match(skill, /Use `query` when you also need other metrics, filters, a date bucket, or another built-in group/);
+
+    assert.match(skill, /## Read-only SQL/);
+    assert.match(skill, /Use `query` or `breakdown` \(MCP `analytics_breakdown`\) first/);
+    assert.match(skill, /Use SQL only when those cannot express the question/);
+    assert.match(skill, /MCP tool `run_sql`/);
+    assert.match(skill, /CLI command `aa sql`/);
+    assert.match(skill, /API `POST \/sql`/);
+    assert.match(skill, /It is Pro/);
+    assert.match(skill, /403 `PRO_REQUIRED` and that blocked call is not metered/);
+    assert.match(skill, /not registered on the demo MCP/);
+    assert.match(skill, /sql my-site --sql '/);
+    assert.match(skill, /sql my-site -f query\.sql/);
+    assert.match(skill, /one `SELECT`/);
+    assert.match(skill, /starts with `WITH` is rejected/);
+    assert.match(skill, /`events` columns: `id`, `event`, `properties`, `user_id`, `session_id`, `timestamp`, `date`, `country`/);
+    assert.match(skill, /`sessions` columns: `session_id`, `user_id`, `project_id`, `start_time`, `end_time`, `duration`, `entry_page`, `exit_page`, `event_count`, `is_bounce`, `date`/);
+    assert.match(skill, /`resolved_user_id` is not a column/);
+    assert.match(skill, /`events` has no `project_id` column/);
+    assert.match(skill, /at most 1,000 rows/);
+    assert.match(skill, /`truncated` is true when more rows matched/);
+    assert.match(skill, /Do not start with `run_sql` or `aa sql`/);
+    assert.match(skill, /Use MCP `run_sql` or CLI `aa sql` only when `query` and `breakdown` cannot express the question/);
+    assert.doesNotMatch(skill, /raw SQL/i);
+    assert.doesNotMatch(skill, /—|–/);
+    assert.doesNotMatch(skill, /10,000/);
+
+    assert.match(readme, /group one `query` by a single `properties\.<key>`/);
+    assert.match(readme, /MCP `run_sql` or CLI `aa sql`/);
+    assert.match(readme, /analytics_breakdown/);
+    assert.match(readme, /at most 1,000 rows, and is Pro/);
+    assert.doesNotMatch(readme, /—|–/);
   });
 });

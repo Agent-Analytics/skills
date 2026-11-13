@@ -1,7 +1,7 @@
 ---
 name: agent-analytics
-description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read Web Vitals or page speed with the Pro vitals read (p75 headline, rating, and cwv_pass), read numeric property metrics such as sum of revenue, read one shipped change on ship day + 8 with compare (metric, metric_event page_view, and better=lower for vitals) plus an errors guardrail, then recommend the smallest growth action using the official Agent Analytics CLI."
-version: 4.0.38
+description: "Product analytics with your AI agent: set up consent-based tracking, read funnels, paths, retention, experiments, and context, read Web Vitals or page speed with the Pro vitals read (p75 headline, rating, and cwv_pass), read numeric property metrics such as sum of revenue, group one query by a single properties.<key>, use read-only SQL (run_sql or aa sql) only when query or breakdown cannot express it, read one shipped change on ship day + 8 with compare (metric, metric_event page_view, and better=lower for vitals) plus an errors guardrail, then recommend the smallest growth action using the official Agent Analytics CLI."
+version: 4.0.39
 author: dannyshmueli
 license: MIT
 repository: https://github.com/Agent-Analytics/skills
@@ -30,7 +30,7 @@ metadata:
 
 # Agent Analytics
 
-Product analytics with your AI agent. Use this skill when a user wants an agent to install Agent Analytics, query product behavior, diagnose activation or retention, inspect paths and funnels, run experiment reads, read Web Vitals or page speed, read numeric property metrics, read one shipped change on ship day + 8, check new errors since that ship, or decide what growth action to take next.
+Product analytics with your AI agent. Use this skill when a user wants an agent to install Agent Analytics, query product behavior, diagnose activation or retention, inspect paths and funnels, run experiment reads, read Web Vitals or page speed, read numeric property metrics, group a query by one event property, use read-only SQL only when query and breakdown cannot express the question, read one shipped change on ship day + 8, check new errors since that ship, or decide what growth action to take next.
 
 The CLI is the execution substrate. Start from the user's codebase, project goals, and product workflows whenever repo access exists. Framework recipes belong in `references/growth-recipes.md`, not as separate skills.
 
@@ -40,7 +40,7 @@ The CLI is the execution substrate. Start from the user's codebase, project goal
 - Do not substitute raw API calls, `curl`, repo-local scripts, MCP tools, or a locally installed binary unless the user explicitly asks.
 - Use fixed commands first: `projects`, `all-sites`, `create`, `stats`, `insights`, `events`, `properties`, `properties-received`, `breakdown`, `pages`, `paths`, `journey`, `sessions`, `sessions-dist`, `replays`, `retention`, `funnel`, `experiments`, `context`, `compare`, `annotate`, `errors`, `vitals`, `portfolios`, `feedback`, and `upgrade-link`.
 - There is no `report` command in CLI `0.5.41`. Produce the final report yourself from fixed-command outputs instead of calling `report`.
-- For any Web Vitals or page speed question, the first read is the vitals read. CLI `vitals`, MCP `web_vitals`, and API `POST /vitals` are that read. It is Pro and costs one read per call. Use `query` only for narrow aggregations the fixed commands cannot answer, including Pro numeric metrics `sum`, `avg`, `p50`, `p75`, and `p95` with `--property`. Do not start a vitals question with `query`. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text. The shipped-change read is `compare`, which is free on all plans and costs one read per call. `compare` with `metric` stays free. The `errors` read is Pro and costs one read per call.
+- For any Web Vitals or page speed question, the first read is the vitals read. CLI `vitals`, MCP `web_vitals`, and API `POST /vitals` are that read. It is Pro and costs one read per call. Use `query` only for narrow aggregations the fixed commands cannot answer, including Pro numeric metrics `sum`, `avg`, `p50`, `p75`, and `p95` with `--property`. `group_by` on that query may add one `properties.<key>`. Use MCP `run_sql` or CLI `aa sql` only when `query` and `breakdown` cannot express the question. Do not start a vitals question with `query`. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text. The shipped-change read is `compare`, which is free on all plans and costs one read per call. `compare` with `metric` stays free. The `errors` read is Pro and costs one read per call.
 - Default to browser approval. Use detached login only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the browser callback cannot work.
 - Do not ask for raw API keys or secrets. Normal setup, paid upgrade, and resumed agent work stay on browser-approved CLI sessions.
 - If the CLI returns `PRO_REQUIRED` or a free-tier read cap, explain the blocked answer, run `upgrade-link --detached`, send the dashboard handoff, run `whoami` after upgrade, then rerun the blocked command. Use `upgrade-link --wait` only when polling is intentionally desired. The dashboard page first confirms the same account as the CLI. Keep the full retry command and private analysis context in the agent session; browser links use a fixed reason and omit custom commands.
@@ -191,7 +191,32 @@ npx --yes @agent-analytics/cli@0.5.41 properties-received my-site
 npx --yes @agent-analytics/cli@0.5.41 query my-site --metrics sum --property revenue --filter '[{"field":"event","op":"eq","value":"purchase"}]'
 ```
 
-MCP `query` takes `metrics`, `property`, and `filters`. Do not start broad growth diagnosis with `query`. Do not read a shipped change with `query`. Use `compare` for that read. `compare` with `metric` stays free.
+`group_by` may include `event`, `date`, `user_id`, `session_id`, and `country`, plus at most one `properties.<key>`. The key uses the same rule as a `properties.<key>` filter: `^[A-Za-z0-9_]+$` and at most 128 characters. Dots and hyphens are not allowed in the key. An invalid key returns 400 `INVALID_PROPERTY_KEY`. A second `properties.*` entry returns 400 `INVALID_GROUP_BY`. Each result row carries the value under the key exactly `properties.<key>`. A null or missing property groups as null. Metrics, filters, and date range still apply, including Pro numeric metrics. The row limit stays capped at 1,000. `query` stays Pro.
+
+Count page views by path, and signups by day and path:
+
+```bash
+npx --yes @agent-analytics/cli@0.5.41 query my-site --metrics event_count,unique_users --group-by properties.path --filter '[{"field":"event","op":"eq","value":"page_view"}]'
+npx --yes @agent-analytics/cli@0.5.41 query my-site --metrics event_count --group-by date,properties.path --filter '[{"field":"event","op":"eq","value":"signup_completed"}]'
+```
+
+MCP `query` takes `metrics`, `property`, `filters`, and `group_by`. `group_by` is an array of those strings, for example `["date", "properties.path"]`. `breakdown` (MCP `analytics_breakdown`) remains the short count of one property. Use `query` when you also need other metrics, filters, a date bucket, or another built-in group. Do not start broad growth diagnosis with `query`. Do not read a shipped change with `query`. Use `compare` for that read. `compare` with `metric` stays free.
+
+## Read-only SQL
+
+Use `query` or `breakdown` (MCP `analytics_breakdown`) first. Use SQL only when those cannot express the question, such as a join or a subquery. MCP tool `run_sql`. CLI command `aa sql`. API `POST /sql`. It is Pro. A free account gets 403 `PRO_REQUIRED` and that blocked call is not metered. `run_sql` is not registered on the demo MCP.
+
+```bash
+npx --yes @agent-analytics/cli@0.5.41 sql my-site --sql 'SELECT e.date, s.entry_page, COUNT(*) AS n FROM events e JOIN sessions s ON s.session_id = e.session_id GROUP BY e.date, s.entry_page'
+npx --yes @agent-analytics/cli@0.5.41 sql my-site -f query.sql
+```
+
+Pass the statement with `--sql` or `-f`. v1 accepts one `SELECT`. A statement that starts with `WITH` is rejected. The server exposes only this project's rows. `properties` is a JSON string. `resolved_user_id` is not a column. `events` has no `project_id` column. `sessions.project_id` is the project name.
+
+- `events` columns: `id`, `event`, `properties`, `user_id`, `session_id`, `timestamp`, `date`, `country`
+- `sessions` columns: `session_id`, `user_id`, `project_id`, `start_time`, `end_time`, `duration`, `entry_page`, `exit_page`, `event_count`, `is_bounce`, `date`
+
+The response returns at most 1,000 rows. `truncated` is true when more rows matched.
 
 ## Change read
 
@@ -251,6 +276,7 @@ Load references only when they are needed:
 - Do not read hosted Web Vitals from `$web_vitals`. Hosted `cwv_*` keys are on `page_view`.
 - Do not skip `errors` after a ship. Run `errors <project> --since 7d --new-since <ship date>` beside `compare`.
 - Do not treat `vitals`, `query` numeric aggregations, or `errors` as free. They are Pro. `compare`, including `compare` with `metric`, stays free.
+- Do not start with `run_sql` or `aa sql`. Use `query` or `breakdown` first. SQL is only when those cannot express the question. SQL is Pro and returns at most 1,000 rows.
 
 ## Verification
 
