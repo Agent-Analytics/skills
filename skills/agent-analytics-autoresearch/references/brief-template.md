@@ -79,7 +79,7 @@ Agent Analytics CLI example:
 
 ```bash
 # Run once if this machine or agent runtime is not logged in.
-npx --yes @agent-analytics/cli@0.5.41 login
+npx --yes @agent-analytics/cli@0.5.41 login --project <name> --level read
 
 PROJECT_SLUG=<project_slug>
 PRIMARY_EVENT=<primary_event>

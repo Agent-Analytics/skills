@@ -1,6 +1,6 @@
 # Setup and auth reference
 
-Use this file only when the compact skill needs more detail for setup, authentication, paid-tier handoff, or managed-runtime storage.
+Use this file only when the compact skill needs more detail for setup, authentication, access level, paid-tier handoff, or managed-runtime storage.
 
 ## Official CLI path
 
@@ -17,18 +17,22 @@ Do not replace it with raw HTTP, local binaries, repo-local scripts, or MCP unle
 For Claude Code, Codex, Cursor, and local CLI runtimes:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 login
+npx --yes @agent-analytics/cli@0.5.41 login --project my-site --level read
 npx --yes @agent-analytics/cli@0.5.41 create my-site --domain https://mysite.com
 npx --yes @agent-analytics/cli@0.5.41 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
 The CLI opens browser approval and waits for the callback. Do not choose detached login only because an agent is running the shell.
 
+## Access level
+
+Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. Name the project at login: `login --project <name> --level read`. Pass `--project <name> --level read` on `login --detached` as well. A 404 on another project means the session is limited to its granted project. Erasure still runs only when the user explicitly asked to delete a person, and that call needs manage.
+
 ## Detached approval
 
 Use detached approval for Paperclip, OpenClaw, issue-based or headless runtimes, or failed callback environments:
 
-1. Run `npx --yes @agent-analytics/cli@0.5.41 login --detached`.
+1. Run `npx --yes @agent-analytics/cli@0.5.41 login --detached --project <name> --level read`.
 2. Send the approval URL to the user.
 3. Wait for the finish code.
 4. Run the printed exchange command.

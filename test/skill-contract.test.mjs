@@ -538,6 +538,26 @@ describe('agent-analytics skill contract', () => {
     assert.match(readme, /`compare`, including `compare` with `metric`, stays free on all plans/);
   });
 
+  it('teaches agents to request the lowest access level and name the project', () => {
+    const levelRule = /Request the lowest level that fits\. Read is the default\. Request manage only when the user asked to change data or erase someone\./;
+    const loginRule = /login --project <name> --level read/;
+    const notFoundRule = /A 404 on another project means the session is limited to its granted project\./;
+    for (const content of [skill, setupAuth, operatingModel, readme]) {
+      assert.match(content, levelRule);
+      assert.match(content, loginRule);
+      assert.match(content, notFoundRule);
+      assert.doesNotMatch(content, /—|–/);
+    }
+    assert.match(skill, /Pass `--project <name> --level read` on `login --detached` as well/);
+    assert.match(skill, /Request manage for that erase\. Read cannot erase\./);
+    assert.match(skill, /only when the user explicitly asked to delete a specific person/);
+    assert.match(skill, /browser-approved CLI session at manage or admin may call `erase`/);
+    assert.match(setupAuth, /only when the user explicitly asked to delete a person/);
+    assert.match(setupAuth, /that call needs manage/);
+    assert.match(readme, /Request manage for that erase\. Read cannot erase\./);
+    assert.match(readme, /only when the user explicitly asked to delete that person/);
+  });
+
   it('teaches subject erasure only for an explicit delete of one person', () => {
     assert.match(skill, /## Subject erasure/);
     assert.match(skill, /`erase_subject` and `aa erase` delete one subject's data permanently/);

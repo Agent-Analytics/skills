@@ -43,18 +43,21 @@ The CLI is the execution substrate. Start from the user's codebase, project goal
 - For any Web Vitals or page speed question, the first read is the vitals read. CLI `vitals`, MCP `web_vitals`, and API `POST /vitals` are that read. It is Pro and costs one read per call. Use `query` only for narrow aggregations the fixed commands cannot answer, including Pro numeric metrics `sum`, `avg`, `p50`, `p75`, and `p95` with `--property`. `group_by` on that query may add one `properties.<key>`. Use MCP `run_sql` or CLI `aa sql` only when `query` and `breakdown` cannot express the question. Do not start a vitals question with `query`. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text. The shipped-change read is `compare`, which is free on all plans and costs one read per call. `compare` with `metric` stays free. The `errors` read is Pro and costs one read per call.
 - Default to browser approval. Use detached login only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the browser callback cannot work.
 - Do not ask for raw API keys or secrets. Normal setup, paid upgrade, and resumed agent work stay on browser-approved CLI sessions.
+- Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. Name the project at login: `login --project <name> --level read`. A 404 on another project means the session is limited to its granted project.
 - If the CLI returns `PRO_REQUIRED` or a free-tier read cap, explain the blocked answer, run `upgrade-link --detached`, send the dashboard handoff, run `whoami` after upgrade, then rerun the blocked command. Use `upgrade-link --wait` only when polling is intentionally desired. The dashboard page first confirms the same account as the CLI. Keep the full retry command and private analysis context in the agent session; browser links use a fixed reason and omit custom commands.
 - Validate project names before `create`: `^[a-zA-Z0-9._-]{1,64}$`.
 
 ## Auth and setup
 
-For Claude Code, Codex, Cursor, and local CLI runtimes, start with normal browser approval:
+For Claude Code, Codex, Cursor, and local CLI runtimes, start with normal browser approval. Name the project when you log in: `login --project <name> --level read`. Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 login
+npx --yes @agent-analytics/cli@0.5.41 login --project my-site --level read
 npx --yes @agent-analytics/cli@0.5.41 create my-site --domain https://mysite.com
 npx --yes @agent-analytics/cli@0.5.41 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
+
+Pass `--project <name> --level read` on `login --detached` as well. A 404 on another project means the session is limited to its granted project.
 
 Do not choose detached login just because the work is happening inside an agent. For Paperclip, OpenClaw, and other issue-based runtimes, run `login --detached`, send the approval URL, wait for the finish code, then complete the printed exchange command.
 
@@ -62,7 +65,7 @@ In OpenClaw and similar managed runtimes, use persistent auth storage and never 
 
 ```bash
 export AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics"
-npx --yes @agent-analytics/cli@0.5.41 login --detached
+npx --yes @agent-analytics/cli@0.5.41 login --detached --project <name> --level read
 npx --yes @agent-analytics/cli@0.5.41 auth status
 AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics" npx --yes @agent-analytics/cli@0.5.41 projects
 ```
@@ -146,7 +149,7 @@ Portfolio surface-role diagnosis: identify each project's role in the growth sys
 
 ## Subject erasure
 
-`erase_subject` and `aa erase` delete one subject's data permanently. Run them only when the user explicitly asked to delete a specific person. Subject erasure is never part of the default analytics loop. Do not call it from funnel, path, retention, experiment, vitals, compare, context, or growth-diagnosis work.
+`erase_subject` and `aa erase` delete one subject's data permanently. Run them only when the user explicitly asked to delete a specific person. Request manage for that erase. Read cannot erase. Subject erasure is never part of the default analytics loop. Do not call it from funnel, path, retention, experiment, vitals, compare, context, or growth-diagnosis work.
 
 The call needs `confirm` set to the exact string `erase`, exactly one subject, and an idempotency key. The subject is one of `user_id`, `session_id`, or `email`. A missing confirm, two subjects, an empty subject, or a subject longer than 256 characters returns 400 `INVALID_ERASURE`. Pass `--idempotency-key`. If you omit it, the CLI generates a key and prints it. Keep that printed key and reuse it for a retry of the same erase. A different subject needs a new key. The same key with the same body returns the original job.
 
@@ -156,7 +159,7 @@ npx --yes @agent-analytics/cli@0.5.41 erase my-site --user-id <user_id> --confir
 
 `--session-id` or `--email` replaces `--user-id`. Pass exactly one.
 
-Agent sessions need the opt-in scope `erasures:write`. It is not in the default agent scopes. `analytics:read` and `projects:write` are not enough. MCP `erase_subject` is registered only when the session includes `erasures:write`, and it is not in the demo MCP. An agent session without that scope returns 403 `FORBIDDEN` with message `agent session missing required scope: erasures:write`. A browser-approved CLI session may call `erase`. Do not switch to MCP just to erase. The hourly cap is 20 accepts per account. Past that cap the call returns 429 `RATE_LIMITED` with reason `erasure_rate_limit`.
+Agent sessions need the opt-in scope `erasures:write`. It is not in the default agent scopes. `analytics:read` and `projects:write` are not enough. MCP `erase_subject` is registered only when the session includes `erasures:write`, and it is not in the demo MCP. An agent session without that scope returns 403 `FORBIDDEN` with message `agent session missing required scope: erasures:write`. A browser-approved CLI session at manage or admin may call `erase`. Do not switch to MCP just to erase. The hourly cap is 20 accepts per account. Past that cap the call returns 429 `RATE_LIMITED` with reason `erasure_rate_limit`.
 
 Report the receipt id and the counts back. The receipt id is `id` (`era_...`). `status` is `pending`, `running`, `completed`, or `failed`. Report `counts`: `events`, `sessions`, `identity_rows`, `profiles`, `email_lookups`, `replay_sessions`, and `replay_objects`. If `status` is not `completed`, say so and do not invent counts. Read the finished receipt with `erasures get <id>`. Do not repeat the raw subject (`user_id`, `session_id`, or `email`) in the report.
 
@@ -277,13 +280,14 @@ Next: split setup-copy users by selected runtime and first_event_received.
 
 Load references only when they are needed:
 
-- `references/setup-auth.md`: login modes, managed-runtime storage, paid-tier handoff, and safe command examples.
+- `references/setup-auth.md`: login modes, access level, managed-runtime storage, paid-tier handoff, and safe command examples.
 - `references/product-analytics-operating-model.md`: projects/surfaces/portfolios, consent-based instrumentation, context upkeep, and verification.
 - `references/growth-recipes.md`: AARRR, Bullseye, AIDA, STP, JTBD, 4Ps, funnel/retention/experiment recipes, the change read recipe (including `metric`, hosted `metric_event page_view` for `cwv_lcp`, `better=lower`, `no_interval_for_metric`, and the `errors` guardrail), and copyable prompts. Web Vitals thresholds and `cwv_pass` are in the Web Vitals section above.
 
 ## Pitfalls
 
 - Do not run `erase_subject` or `aa erase` unless the user explicitly asked to delete a specific person. The delete is permanent and is never part of the default analytics loop.
+- A 404 on another project means the session is limited to its granted project.
 - Do not use URL-only assumptions instead of code inspection when repo access exists.
 - Do not create a project for every subdomain, localhost URL, staging URL, or preview.
 - Do not install generic click/pageview duplicates for automatic tracker signals.
