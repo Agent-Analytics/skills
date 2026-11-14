@@ -538,6 +538,57 @@ describe('agent-analytics skill contract', () => {
     assert.match(readme, /`compare`, including `compare` with `metric`, stays free on all plans/);
   });
 
+  it('teaches subject erasure only for an explicit delete of one person', () => {
+    assert.match(skill, /## Subject erasure/);
+    assert.match(skill, /`erase_subject` and `aa erase` delete one subject's data permanently/);
+    assert.match(skill, /only when the user explicitly asked to delete a specific person/);
+    assert.match(skill, /never part of the default analytics loop/);
+    assert.match(skill, /Do not call it from funnel, path, retention, experiment, vitals, compare, context, or growth-diagnosis work/);
+    assert.match(skill, /`confirm` set to the exact string `erase`/);
+    assert.match(skill, /exactly one subject, and an idempotency key/);
+    assert.match(skill, /one of `user_id`, `session_id`, or `email`/);
+    assert.match(skill, /400 `INVALID_ERASURE`/);
+    assert.match(skill, /--idempotency-key/);
+    assert.match(skill, /the CLI generates a key and prints it/);
+    assert.match(skill, /reuse it for a retry of the same erase/);
+    assert.match(skill, /same key with the same body returns the original job/);
+    assert.match(skill, /erase my-site --user-id <user_id> --confirm erase --idempotency-key <key>/);
+    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.41 erase my-site/);
+    assert.match(skill, /`--session-id` or `--email` replaces `--user-id`/);
+    assert.match(skill, /Pass exactly one/);
+    assert.match(skill, /opt-in scope `erasures:write`/);
+    assert.match(skill, /not in the default agent scopes/);
+    assert.match(skill, /`analytics:read` and `projects:write` are not enough/);
+    assert.match(skill, /registered only when the session includes `erasures:write`/);
+    assert.match(skill, /not in the demo MCP/);
+    assert.match(skill, /403 `FORBIDDEN`/);
+    assert.match(skill, /agent session missing required scope: erasures:write/);
+    assert.doesNotMatch(skill, /FORBIDDEN_SCOPE/);
+    assert.match(skill, /429 `RATE_LIMITED` with reason `erasure_rate_limit`/);
+    assert.match(skill, /hourly cap is 20 accepts per account/);
+    assert.match(skill, /Do not switch to MCP just to erase/);
+    assert.match(skill, /Report the receipt id and the counts back/);
+    assert.match(skill, /receipt id is `id` \(`era_\.\.\.`\)/);
+    assert.match(skill, /`status` is `pending`, `running`, `completed`, or `failed`/);
+    assert.doesNotMatch(skill, /processing/);
+    assert.match(skill, /`events`, `sessions`, `identity_rows`, `profiles`, `email_lookups`, `replay_sessions`, and `replay_objects`/);
+    assert.match(skill, /If `status` is not `completed`, say so and do not invent counts/);
+    assert.match(skill, /erasures get <id>/);
+    assert.match(skill, /Do not repeat the raw subject/);
+    assert.match(skill, /Do not run `erase_subject` or `aa erase` unless the user explicitly asked to delete a specific person/);
+    assert.doesNotMatch(skill, /Use fixed commands first:[^\n]*`erase`/);
+    assert.doesNotMatch(skill, /—|–/);
+
+    assert.match(readme, /Subject erasure is not an analytics read/);
+    assert.match(readme, /`aa erase` and MCP `erase_subject` delete one person's data permanently/);
+    assert.match(readme, /only when the user explicitly asked to delete that person/);
+    assert.match(readme, /`confirm` `erase`, exactly one subject \(`user_id`, `session_id`, or `email`\), and an idempotency key/);
+    assert.match(readme, /opt-in scope `erasures:write`/);
+    assert.match(readme, /never part of the default analytics loop/);
+    assert.match(readme, /Report the receipt id and counts back/);
+    assert.doesNotMatch(readme, /—|–/);
+  });
+
   it('teaches the vitals read for page speed questions', () => {
     for (const content of [skill, growthRecipes, operatingModel, readme, autoresearchSkill]) {
       assert.match(content, /p75 is the headline/);
