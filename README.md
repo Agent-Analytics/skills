@@ -55,18 +55,19 @@ Set up Agent Analytics for this project. If browser approval is needed, open it 
 Use normal browser approval first in Claude Code, Codex, Cursor, and local CLI runtimes:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 login --project my-site --level read
+npx --yes @agent-analytics/cli@0.5.41 login --level admin
 npx --yes @agent-analytics/cli@0.5.41 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.41 login --project my-site --level read
 npx --yes @agent-analytics/cli@0.5.41 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
-Name the project at login: `login --project <name> --level read`. Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. A 404 on another project means the session is limited to its granted project.
+When the project already exists, name it: `login --project <name> --level read`. Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. When the account has no project yet, or the user asks to create one, log in with `--level admin` and no `--project` (All projects), run create, then use read or manage for normal work. Creating a project needs admin with All projects. Context, annotations, experiments, feedback and replay writes need manage. A 404 on another project means the session is limited to its granted project. `whoami` shows the granted project and level; `legacy` means an older all-projects session.
 
-Use `login --detached` only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the local browser callback cannot work. Pass `--project <name> --level read` on that login as well.
+Use `login --detached` only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the local browser callback cannot work. Pass `--project <name> --level read` on that login as well. For a new project, use `login --detached --level admin` with no `--project`.
 
 For paid-tier blocks, run the intended command first. If the CLI returns `PRO_REQUIRED` or a free-tier read cap, use the CLI upgrade handoff. The dashboard page first confirms the same account as the CLI, explains that the requested task needs Pro, and then opens payment. The full command and private analysis context stay in the agent session. `query` numeric aggregations and `errors` are Pro. `compare`, including `compare` with `metric`, stays free on all plans.
 
-Subject erasure is not an analytics read. `aa erase` and MCP `erase_subject` delete one person's data permanently. Run them only when the user explicitly asked to delete that person. The call needs `confirm` `erase`, exactly one subject (`user_id`, `session_id`, or `email`), and an idempotency key. Agent sessions need the opt-in scope `erasures:write`. Request manage for that erase. Read cannot erase. Erasure is never part of the default analytics loop. Report the receipt id and counts back.
+Subject erasure is not an analytics read. `aa erase` and MCP `erase_subject` delete one person's data permanently. Run them only when the user explicitly asked to delete that person. The call needs `confirm` `erase`, exactly one subject (`user_id`, `session_id`, or `email`), and an idempotency key. Erasure needs manage or admin. That level grants the opt-in scope `erasures:write`. A read session gets 403 `FORBIDDEN_SCOPE`. Erasure is never part of the default analytics loop. Report the receipt id and counts back.
 
 ### `agent-analytics-autoresearch`
 

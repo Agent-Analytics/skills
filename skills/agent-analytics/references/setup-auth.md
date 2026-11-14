@@ -17,8 +17,9 @@ Do not replace it with raw HTTP, local binaries, repo-local scripts, or MCP unle
 For Claude Code, Codex, Cursor, and local CLI runtimes:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 login --project my-site --level read
+npx --yes @agent-analytics/cli@0.5.41 login --level admin
 npx --yes @agent-analytics/cli@0.5.41 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.41 login --project my-site --level read
 npx --yes @agent-analytics/cli@0.5.41 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
@@ -26,13 +27,13 @@ The CLI opens browser approval and waits for the callback. Do not choose detache
 
 ## Access level
 
-Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. Name the project at login: `login --project <name> --level read`. Pass `--project <name> --level read` on `login --detached` as well. A 404 on another project means the session is limited to its granted project. Erasure still runs only when the user explicitly asked to delete a person, and that call needs manage.
+Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. Name the project at login: `login --project <name> --level read`. When the account has no project yet, or the user asks to create one, log in with `--level admin` and no `--project` (All projects), run create, then use read or manage for normal work. Creating a project needs admin with All projects. Context, annotations, experiments, feedback and replay writes need manage. Pass `--project <name> --level read` on `login --detached` as well. For a new project, detached login is `login --detached --level admin` with no `--project`. A 404 on another project means the session is limited to its granted project. `whoami` shows the granted project and level; `legacy` means an older all-projects session. Erasure still runs only when the user explicitly asked to delete a person. Erasure needs manage or admin. That level grants `erasures:write`. A read session gets 403 `FORBIDDEN_SCOPE`.
 
 ## Detached approval
 
 Use detached approval for Paperclip, OpenClaw, issue-based or headless runtimes, or failed callback environments:
 
-1. Run `npx --yes @agent-analytics/cli@0.5.41 login --detached --project <name> --level read`.
+1. Run `npx --yes @agent-analytics/cli@0.5.41 login --detached --project <name> --level read`. When the account has no project yet, or the user asks to create one, run `login --detached --level admin` with no `--project`, then `create`, then log in again at read or manage.
 2. Send the approval URL to the user.
 3. Wait for the finish code.
 4. Run the printed exchange command.

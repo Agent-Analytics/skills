@@ -44,20 +44,23 @@ The CLI is the execution substrate. Start from the user's codebase, project goal
 - Default to browser approval. Use detached login only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the browser callback cannot work.
 - Do not ask for raw API keys or secrets. Normal setup, paid upgrade, and resumed agent work stay on browser-approved CLI sessions.
 - Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. Name the project at login: `login --project <name> --level read`. A 404 on another project means the session is limited to its granted project.
+- When the account has no project yet, or the user asks to create one, log in with `--level admin` and no `--project` (All projects), run create, then use read or manage for normal work. Creating a project needs admin with All projects. Context, annotations, experiments, feedback and replay writes need manage.
+- `whoami` shows the granted project and level; `legacy` means an older all-projects session.
 - If the CLI returns `PRO_REQUIRED` or a free-tier read cap, explain the blocked answer, run `upgrade-link --detached`, send the dashboard handoff, run `whoami` after upgrade, then rerun the blocked command. Use `upgrade-link --wait` only when polling is intentionally desired. The dashboard page first confirms the same account as the CLI. Keep the full retry command and private analysis context in the agent session; browser links use a fixed reason and omit custom commands.
 - Validate project names before `create`: `^[a-zA-Z0-9._-]{1,64}$`.
 
 ## Auth and setup
 
-For Claude Code, Codex, Cursor, and local CLI runtimes, start with normal browser approval. Name the project when you log in: `login --project <name> --level read`. Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone.
+For Claude Code, Codex, Cursor, and local CLI runtimes, start with normal browser approval. When the project already exists, name it: `login --project <name> --level read`. Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. When the account has no project yet, or the user asks to create one, log in with `--level admin` and no `--project` (All projects), run create, then use read or manage for normal work.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 login --project my-site --level read
+npx --yes @agent-analytics/cli@0.5.41 login --level admin
 npx --yes @agent-analytics/cli@0.5.41 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.41 login --project my-site --level read
 npx --yes @agent-analytics/cli@0.5.41 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
-Pass `--project <name> --level read` on `login --detached` as well. A 404 on another project means the session is limited to its granted project.
+Creating a project needs admin with All projects. Context, annotations, experiments, feedback and replay writes need manage. Pass `--project <name> --level read` on `login --detached` as well. For a new project, detached login is `login --detached --level admin` with no `--project`. A 404 on another project means the session is limited to its granted project. `whoami` shows the granted project and level; `legacy` means an older all-projects session.
 
 Do not choose detached login just because the work is happening inside an agent. For Paperclip, OpenClaw, and other issue-based runtimes, run `login --detached`, send the approval URL, wait for the finish code, then complete the printed exchange command.
 
@@ -149,7 +152,7 @@ Portfolio surface-role diagnosis: identify each project's role in the growth sys
 
 ## Subject erasure
 
-`erase_subject` and `aa erase` delete one subject's data permanently. Run them only when the user explicitly asked to delete a specific person. Request manage for that erase. Read cannot erase. Subject erasure is never part of the default analytics loop. Do not call it from funnel, path, retention, experiment, vitals, compare, context, or growth-diagnosis work.
+`erase_subject` and `aa erase` delete one subject's data permanently. Run them only when the user explicitly asked to delete a specific person. Erasure needs manage or admin. A read session gets 403 `FORBIDDEN_SCOPE`. Subject erasure is never part of the default analytics loop. Do not call it from funnel, path, retention, experiment, vitals, compare, context, or growth-diagnosis work.
 
 The call needs `confirm` set to the exact string `erase`, exactly one subject, and an idempotency key. The subject is one of `user_id`, `session_id`, or `email`. A missing confirm, two subjects, an empty subject, or a subject longer than 256 characters returns 400 `INVALID_ERASURE`. Pass `--idempotency-key`. If you omit it, the CLI generates a key and prints it. Keep that printed key and reuse it for a retry of the same erase. A different subject needs a new key. The same key with the same body returns the original job.
 
@@ -159,7 +162,7 @@ npx --yes @agent-analytics/cli@0.5.41 erase my-site --user-id <user_id> --confir
 
 `--session-id` or `--email` replaces `--user-id`. Pass exactly one.
 
-Agent sessions need the opt-in scope `erasures:write`. It is not in the default agent scopes. `analytics:read` and `projects:write` are not enough. MCP `erase_subject` is registered only when the session includes `erasures:write`, and it is not in the demo MCP. An agent session without that scope returns 403 `FORBIDDEN` with message `agent session missing required scope: erasures:write`. A browser-approved CLI session at manage or admin may call `erase`. Do not switch to MCP just to erase. The hourly cap is 20 accepts per account. Past that cap the call returns 429 `RATE_LIMITED` with reason `erasure_rate_limit`.
+Erasure needs manage or admin. That level grants the opt-in scope `erasures:write`. It is not in the default agent scopes. `analytics:read` and `projects:write` are not enough. MCP `erase_subject` is registered only when the session includes `erasures:write`, and it is not in the demo MCP. A read session gets 403 `FORBIDDEN_SCOPE`. Do not switch to MCP just to erase. The hourly cap is 20 accepts per account. Past that cap the call returns 429 `RATE_LIMITED` with reason `erasure_rate_limit`.
 
 Report the receipt id and the counts back. The receipt id is `id` (`era_...`). `status` is `pending`, `running`, `completed`, or `failed`. Report `counts`: `events`, `sessions`, `identity_rows`, `profiles`, `email_lookups`, `replay_sessions`, and `replay_objects`. If `status` is not `completed`, say so and do not invent counts. Read the finished receipt with `erasures get <id>`. Do not repeat the raw subject (`user_id`, `session_id`, or `email`) in the report.
 

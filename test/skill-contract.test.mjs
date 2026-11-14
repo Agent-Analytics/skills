@@ -542,20 +542,39 @@ describe('agent-analytics skill contract', () => {
     const levelRule = /Request the lowest level that fits\. Read is the default\. Request manage only when the user asked to change data or erase someone\./;
     const loginRule = /login --project <name> --level read/;
     const notFoundRule = /A 404 on another project means the session is limited to its granted project\./;
+    const createRule = /Creating a project needs admin with All projects\./;
+    const writeRule = /Context, annotations, experiments, feedback and replay writes need manage\./;
+    const firstLogin = /log in with `--level admin` and no `--project` \(All projects\), run create, then use read or manage for normal work/;
+    const whoamiRule = /`whoami` shows the granted project and level; `legacy` means an older all-projects session\./;
     for (const content of [skill, setupAuth, operatingModel, readme]) {
       assert.match(content, levelRule);
       assert.match(content, loginRule);
       assert.match(content, notFoundRule);
+      assert.match(content, createRule);
+      assert.match(content, writeRule);
+      assert.match(content, firstLogin);
       assert.doesNotMatch(content, /—|–/);
     }
+    for (const content of [skill, setupAuth, readme]) {
+      assert.match(content, /login --level admin/);
+      assert.match(content, whoamiRule);
+      assert.match(content, /Erasure needs manage or admin/);
+      assert.match(content, /403 `FORBIDDEN_SCOPE`/);
+    }
+    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.41 login --level admin/);
+    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.41 create my-site/);
+    assert.match(skill, /npx --yes @agent-analytics\/cli@0\.5\.41 login --project my-site --level read/);
     assert.match(skill, /Pass `--project <name> --level read` on `login --detached` as well/);
-    assert.match(skill, /Request manage for that erase\. Read cannot erase\./);
+    assert.match(skill, /login --detached --level admin` with no `--project`/);
     assert.match(skill, /only when the user explicitly asked to delete a specific person/);
-    assert.match(skill, /browser-approved CLI session at manage or admin may call `erase`/);
+    assert.match(skill, /That level grants the opt-in scope `erasures:write`/);
+    assert.doesNotMatch(skill, /agent session missing required scope: erasures:write/);
     assert.match(setupAuth, /only when the user explicitly asked to delete a person/);
-    assert.match(setupAuth, /that call needs manage/);
-    assert.match(readme, /Request manage for that erase\. Read cannot erase\./);
+    assert.match(setupAuth, /That level grants `erasures:write`/);
+    assert.match(readme, /That level grants the opt-in scope `erasures:write`/);
     assert.match(readme, /only when the user explicitly asked to delete that person/);
+    assert.match(skill, /version: 4\.0\.41/);
+    assert.match(skill, /@agent-analytics\/cli@0\.5\.41/);
   });
 
   it('teaches subject erasure only for an explicit delete of one person', () => {
@@ -581,9 +600,10 @@ describe('agent-analytics skill contract', () => {
     assert.match(skill, /`analytics:read` and `projects:write` are not enough/);
     assert.match(skill, /registered only when the session includes `erasures:write`/);
     assert.match(skill, /not in the demo MCP/);
-    assert.match(skill, /403 `FORBIDDEN`/);
-    assert.match(skill, /agent session missing required scope: erasures:write/);
-    assert.doesNotMatch(skill, /FORBIDDEN_SCOPE/);
+    assert.match(skill, /Erasure needs manage or admin/);
+    assert.match(skill, /That level grants the opt-in scope `erasures:write`/);
+    assert.match(skill, /A read session gets 403 `FORBIDDEN_SCOPE`/);
+    assert.doesNotMatch(skill, /agent session missing required scope: erasures:write/);
     assert.match(skill, /429 `RATE_LIMITED` with reason `erasure_rate_limit`/);
     assert.match(skill, /hourly cap is 20 accepts per account/);
     assert.match(skill, /Do not switch to MCP just to erase/);
