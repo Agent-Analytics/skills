@@ -55,10 +55,10 @@ Set up Agent Analytics for this project. If browser approval is needed, open it 
 Use normal browser approval first in Claude Code, Codex, Cursor, and local CLI runtimes:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 login --level admin
-npx --yes @agent-analytics/cli@0.5.41 create my-site --domain https://mysite.com
-npx --yes @agent-analytics/cli@0.5.41 login --project my-site --level read
-npx --yes @agent-analytics/cli@0.5.41 events my-site --event <first_useful_event> --days 7 --limit 20
+npx --yes @agent-analytics/cli@0.5.43 login --level admin
+npx --yes @agent-analytics/cli@0.5.43 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.43 login --project my-site --level read
+npx --yes @agent-analytics/cli@0.5.43 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
 
 When the project already exists, name it: `login --project <name> --level read`. Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. When the account has no project yet, or the user asks to create one, log in with `--level admin` and no `--project` (All projects), run create, then use read or manage for normal work. Creating a project needs admin with All projects. Context, annotations, experiments, feedback and replay writes need manage. A 404 on another project means the session is limited to its granted project. `whoami` shows the granted project and level; `legacy` means an older all-projects session.

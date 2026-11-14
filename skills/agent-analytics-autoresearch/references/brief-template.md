@@ -79,7 +79,7 @@ Agent Analytics CLI example:
 
 ```bash
 # Run once if this machine or agent runtime is not logged in.
-npx --yes @agent-analytics/cli@0.5.41 login --project <name> --level read
+npx --yes @agent-analytics/cli@0.5.43 login --project <name> --level read
 
 PROJECT_SLUG=<project_slug>
 PRIMARY_EVENT=<primary_event>
@@ -103,12 +103,12 @@ run_snapshot_command() {
   fi
 }
 
-run_snapshot_command "data/$RUN_DATE/insights.txt" npx --yes @agent-analytics/cli@0.5.41 insights "$PROJECT_SLUG" --period 7d
-run_snapshot_command "data/$RUN_DATE/pages.txt" npx --yes @agent-analytics/cli@0.5.41 pages "$PROJECT_SLUG" --since 7d
-run_snapshot_command "data/$RUN_DATE/funnel.txt" npx --yes @agent-analytics/cli@0.5.41 funnel "$PROJECT_SLUG" --steps "page_view,$PROXY_EVENT,$PRIMARY_EVENT" --since 7d
-run_snapshot_command "data/$RUN_DATE/${PROXY_EVENT}-events.txt" npx --yes @agent-analytics/cli@0.5.41 events "$PROJECT_SLUG" --event "$PROXY_EVENT" --days 7 --limit 50
-run_snapshot_command "data/$RUN_DATE/${PRIMARY_EVENT}-events.txt" npx --yes @agent-analytics/cli@0.5.41 events "$PROJECT_SLUG" --event "$PRIMARY_EVENT" --days 7 --limit 50
-run_snapshot_command "data/$RUN_DATE/experiments.txt" npx --yes @agent-analytics/cli@0.5.41 experiments list "$PROJECT_SLUG"
+run_snapshot_command "data/$RUN_DATE/insights.txt" npx --yes @agent-analytics/cli@0.5.43 insights "$PROJECT_SLUG" --period 7d
+run_snapshot_command "data/$RUN_DATE/pages.txt" npx --yes @agent-analytics/cli@0.5.43 pages "$PROJECT_SLUG" --since 7d
+run_snapshot_command "data/$RUN_DATE/funnel.txt" npx --yes @agent-analytics/cli@0.5.43 funnel "$PROJECT_SLUG" --steps "page_view,$PROXY_EVENT,$PRIMARY_EVENT" --since 7d
+run_snapshot_command "data/$RUN_DATE/${PROXY_EVENT}-events.txt" npx --yes @agent-analytics/cli@0.5.43 events "$PROJECT_SLUG" --event "$PROXY_EVENT" --days 7 --limit 50
+run_snapshot_command "data/$RUN_DATE/${PRIMARY_EVENT}-events.txt" npx --yes @agent-analytics/cli@0.5.43 events "$PROJECT_SLUG" --event "$PRIMARY_EVENT" --days 7 --limit 50
+run_snapshot_command "data/$RUN_DATE/experiments.txt" npx --yes @agent-analytics/cli@0.5.43 experiments list "$PROJECT_SLUG"
 ```
 
 Generic placeholders:
