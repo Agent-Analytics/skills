@@ -111,7 +111,7 @@ MCP `compare` fields: `project`, `goal_event`, optional `denominator_event` (def
 If the compare window may contain 404 or one-hit bot page views, for example right after sharing new URLs, rerun `compare` before trusting a revert. `--exclude-denominator` is repeatable. Each `field=value` is `{field, op: "neq", value}` and applies only to denominator events. MCP `denominator_filters` is that array. Existing `filters` stay unchanged.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 compare my-site --ship-date 2026-04-08 --days 7 --goal landing_signup_cta_clicked --exclude-denominator "properties.title=<404 page title>"
+npx --yes @agent-analytics/cli@0.5.43 compare my-site --ship-date 2026-04-08 --days 7 --goal landing_signup_cta_clicked --exclude-denominator "properties.title=<404 page title>"
 ```
 
 At ship time, CLI `annotate` adds one annotation and leaves goals, activation events, glossary entries, and existing annotations in place. Flags: `--title` (max 120 characters), optional `--note` (max 500 characters), optional `--at` (ISO-8601 `occurred_at`; omitted, it defaults to now). MCP `append_project_annotation` fields: `project`, `occurred_at`, `title`, `note`. The same `occurred_at` and `title` returns `appended: false` and does not replace the stored note. The cap is 100 annotations.
@@ -121,14 +121,14 @@ At ship time, CLI `annotate` adds one annotation and leaves goals, activation ev
 Worked window, ship day 2026-04-08 excluded. Baseline is 2026-04-01 through 2026-04-07. Compare is 2026-04-09 through 2026-04-15. Read on 2026-04-16, ship day + 8, so the compare window has no partial day. `page_view` and `landing_signup_cta_clicked` below are example event names.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 annotate my-site --title "Landing hero rewrite" --note "Host routine holds the rule. Goal landing_signup_cta_clicked / page_view. Windows 2026-04-01..2026-04-07 and 2026-04-09..2026-04-15. Example thresholds: keep 0.15, revert -0.10, 200 denominator unique users per window, 20 goal converters across both." --at 2026-04-08T00:00:00.000Z
-npx --yes @agent-analytics/cli@0.5.41 compare my-site --ship-date 2026-04-08 --days 7 --goal landing_signup_cta_clicked --denominator page_view --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
+npx --yes @agent-analytics/cli@0.5.43 annotate my-site --title "Landing hero rewrite" --note "Host routine holds the rule. Goal landing_signup_cta_clicked / page_view. Windows 2026-04-01..2026-04-07 and 2026-04-09..2026-04-15. Example thresholds: keep 0.15, revert -0.10, 200 denominator unique users per window, 20 goal converters across both." --at 2026-04-08T00:00:00.000Z
+npx --yes @agent-analytics/cli@0.5.43 compare my-site --ship-date 2026-04-08 --days 7 --goal landing_signup_cta_clicked --denominator page_view --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
 ```
 
 Explicit windows for the same dates omit `--ship-date` and `--days`:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 compare my-site --goal landing_signup_cta_clicked --baseline-from 2026-04-01 --baseline-to 2026-04-07 --compare-from 2026-04-09 --compare-to 2026-04-15 --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
+npx --yes @agent-analytics/cli@0.5.43 compare my-site --goal landing_signup_cta_clicked --baseline-from 2026-04-01 --baseline-to 2026-04-07 --compare-from 2026-04-09 --compare-to 2026-04-15 --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
 ```
 
 On MCP `compare`, send `goal_event` `landing_signup_cta_clicked`, `denominator_event` `page_view`, `ship_date` `2026-04-08`, `window_days` `7`, and nested `rule` with `keep_threshold` `0.15`, `revert_threshold` `-0.10`, `min_denominator` `200`, and `min_goal_events` `20`. Append the ship with MCP `append_project_annotation` and the same `occurred_at`, `title`, and `note`.
@@ -166,8 +166,8 @@ Public shape: baseline `value` 2400 and compare `value` 1200 with `better` `lowe
 For hosted Web Vitals, `--metric-event` is `page_view`. Hosted stores `cwv_*` on `page_view`. Self-hosted core stores `$web_vitals`. Default install snippets include `data-track-vitals="true"`. LCP still uses `better` `lower`. For a custom property, run `properties-received <project>` (MCP `properties_received`) and use the event that carries the key. Revenue uses goal event `purchase` from `aa.track('purchase', { revenue: 29, currency: 'USD' })`, so `metric_event` stays the goal when `revenue` is on `purchase`. `29` and `USD` are the public example.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 compare my-site --ship-date 2026-04-08 --days 7 --goal signup --metric 'p75(cwv_lcp)' --metric-event page_view --better lower --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
-npx --yes @agent-analytics/cli@0.5.41 compare my-site --ship-date 2026-04-08 --days 7 --goal purchase --metric 'sum(revenue)' --better higher --denominator page_view --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
+npx --yes @agent-analytics/cli@0.5.43 compare my-site --ship-date 2026-04-08 --days 7 --goal signup --metric 'p75(cwv_lcp)' --metric-event page_view --better lower --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
+npx --yes @agent-analytics/cli@0.5.43 compare my-site --ship-date 2026-04-08 --days 7 --goal purchase --metric 'sum(revenue)' --better higher --denominator page_view --keep-threshold 0.15 --revert-threshold -0.10 --min-denominator 200 --min-goal-events 20
 ```
 
 MCP `compare` sends `metric` `p75(cwv_lcp)`, `metric_event` `page_view`, and `better` `lower` for the hosted vitals example, or `metric` `sum(revenue)` and `better` `higher` for the revenue example.
@@ -175,7 +175,7 @@ MCP `compare` sends `metric` `p75(cwv_lcp)`, `metric_event` `page_view`, and `be
 A vitals or page speed question outside this before/after read uses the vitals read first. CLI `vitals`, MCP `web_vitals`, and API `POST /vitals` are that read. It is Pro. p75 is the headline. `cwv_pass` is true when LCP, INP, and CLS p75 are all `good`. If INP `n` is 0, decide on LCP and CLS. It is null when LCP or CLS `n` is 0. Rating: a value <= `good_max` is `good`, a value > `poor_min` is `poor`, otherwise `needs-improvement`. Thresholds (<https://web.dev/articles/vitals>): LCP 2500/4000 ms, INP 200/500 ms, CLS 0.1/0.25 unitless, FCP 1800/3000 ms, TTFB 800/1800 ms. `--by device` returns `mobile`, `tablet`, and `desktop`. `--by path` returns the top paths by `n`, sorted by worst LCP p75. `top_poor_targets` lists up to 5 selectors among poor loads for LCP, INP, and CLS. FCP and TTFB return `[]`. CLS is Chromium only. `skipped` counts page views missing that vital.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 vitals my-site --days 7 --by device
+npx --yes @agent-analytics/cli@0.5.43 vitals my-site --days 7 --by device
 ```
 
 ## Errors guardrail
@@ -183,7 +183,7 @@ npx --yes @agent-analytics/cli@0.5.41 vitals my-site --days 7 --by device
 After each ship, run `errors` on the same day as `compare`. `errors` is Pro and costs one read per call. `compare` stays free.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 errors my-site --since 7d --new-since 2026-04-08
+npx --yes @agent-analytics/cli@0.5.43 errors my-site --since 7d --new-since 2026-04-08
 ```
 
 That is `errors <project> --since 7d --new-since <ship date>`. `--since` defaults to 7 days and bounds `count`, `users`, `sessions`, and `top_paths`. `--new-since` marks groups first seen on or after the ship. Pass both. The MCP tool is `errors`. Fields: `project`, `since`, `new_since`, optional `until` (defaults to today UTC), and optional `limit` (default 20, maximum 100). Every response includes boolean `approximate`. When `approximate` is true, it also includes `caps`, an array of entries from `distinct_triples` and `window_rows`. Say the counts are approximate and list `caps`.

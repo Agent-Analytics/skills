@@ -21,7 +21,7 @@ Minimum workflow:
 1. Classify scope.
 2. Ask for or propose the initial project/portfolio goal and get confirmation before storing it as durable context.
 3. Inspect product code when available.
-4. Login and create or identify the right project.
+4. Login and create or identify the right project. When the project exists, name it: `login --project <name> --level read`. Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. When the account has no project yet, or the user asks to create one, log in with `--level admin` and no `--project` (All projects), run create, then use read or manage for normal work. Creating a project needs admin with All projects. Context, annotations, experiments, feedback and replay writes need manage. A 404 on another project means the session is limited to its granted project.
 5. Add the exact tracking snippet returned for that project.
 6. Choose the smallest meaningful custom event set tied to the confirmed goal.
 7. Explain what each event enables.

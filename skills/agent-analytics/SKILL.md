@@ -36,25 +36,31 @@ The CLI is the execution substrate. Start from the user's codebase, project goal
 
 ## Mandatory execution policy
 
-- For live Agent Analytics work, use `npx --yes @agent-analytics/cli@0.5.41 <command>`.
+- For live Agent Analytics work, use `npx --yes @agent-analytics/cli@0.5.43 <command>`.
 - Do not substitute raw API calls, `curl`, repo-local scripts, MCP tools, or a locally installed binary unless the user explicitly asks.
 - Use fixed commands first: `projects`, `all-sites`, `create`, `stats`, `insights`, `events`, `properties`, `properties-received`, `breakdown`, `pages`, `paths`, `journey`, `sessions`, `sessions-dist`, `replays`, `retention`, `funnel`, `experiments`, `context`, `compare`, `annotate`, `errors`, `vitals`, `portfolios`, `feedback`, and `upgrade-link`.
-- There is no `report` command in CLI `0.5.41`. Produce the final report yourself from fixed-command outputs instead of calling `report`.
+- There is no `report` command in CLI `0.5.43`. Produce the final report yourself from fixed-command outputs instead of calling `report`.
 - For any Web Vitals or page speed question, the first read is the vitals read. CLI `vitals`, MCP `web_vitals`, and API `POST /vitals` are that read. It is Pro and costs one read per call. Use `query` only for narrow aggregations the fixed commands cannot answer, including Pro numeric metrics `sum`, `avg`, `p50`, `p75`, and `p95` with `--property`. `group_by` on that query may add one `properties.<key>`. Use MCP `run_sql` or CLI `aa sql` only when `query` and `breakdown` cannot express the question. Do not start a vitals question with `query`. Do not start broad growth diagnosis with `query`; do not build `--filter` JSON from raw user text. The shipped-change read is `compare`, which is free on all plans and costs one read per call. `compare` with `metric` stays free. The `errors` read is Pro and costs one read per call.
 - Default to browser approval. Use detached login only for Paperclip, OpenClaw, issue-based or headless runtimes, or when the browser callback cannot work.
 - Do not ask for raw API keys or secrets. Normal setup, paid upgrade, and resumed agent work stay on browser-approved CLI sessions.
+- Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. Name the project at login: `login --project <name> --level read`. A 404 on another project means the session is limited to its granted project.
+- When the account has no project yet, or the user asks to create one, log in with `--level admin` and no `--project` (All projects), run create, then use read or manage for normal work. Creating a project needs admin with All projects. Context, annotations, experiments, feedback and replay writes need manage.
+- `whoami` shows the granted project and level; `legacy` means an older all-projects session.
 - If the CLI returns `PRO_REQUIRED` or a free-tier read cap, explain the blocked answer, run `upgrade-link --detached`, send the dashboard handoff, run `whoami` after upgrade, then rerun the blocked command. Use `upgrade-link --wait` only when polling is intentionally desired. The dashboard page first confirms the same account as the CLI. Keep the full retry command and private analysis context in the agent session; browser links use a fixed reason and omit custom commands.
 - Validate project names before `create`: `^[a-zA-Z0-9._-]{1,64}$`.
 
 ## Auth and setup
 
-For Claude Code, Codex, Cursor, and local CLI runtimes, start with normal browser approval:
+For Claude Code, Codex, Cursor, and local CLI runtimes, start with normal browser approval. When the project already exists, name it: `login --project <name> --level read`. Request the lowest level that fits. Read is the default. Request manage only when the user asked to change data or erase someone. When the account has no project yet, or the user asks to create one, log in with `--level admin` and no `--project` (All projects), run create, then use read or manage for normal work.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 login
-npx --yes @agent-analytics/cli@0.5.41 create my-site --domain https://mysite.com
-npx --yes @agent-analytics/cli@0.5.41 events my-site --event <first_useful_event> --days 7 --limit 20
+npx --yes @agent-analytics/cli@0.5.43 login --level admin
+npx --yes @agent-analytics/cli@0.5.43 create my-site --domain https://mysite.com
+npx --yes @agent-analytics/cli@0.5.43 login --project my-site --level read
+npx --yes @agent-analytics/cli@0.5.43 events my-site --event <first_useful_event> --days 7 --limit 20
 ```
+
+Creating a project needs admin with All projects. Context, annotations, experiments, feedback and replay writes need manage. Pass `--project <name> --level read` on `login --detached` as well. For a new project, detached login is `login --detached --level admin` with no `--project`. A 404 on another project means the session is limited to its granted project. `whoami` shows the granted project and level; `legacy` means an older all-projects session.
 
 Do not choose detached login just because the work is happening inside an agent. For Paperclip, OpenClaw, and other issue-based runtimes, run `login --detached`, send the approval URL, wait for the finish code, then complete the printed exchange command.
 
@@ -62,9 +68,9 @@ In OpenClaw and similar managed runtimes, use persistent auth storage and never 
 
 ```bash
 export AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics"
-npx --yes @agent-analytics/cli@0.5.41 login --detached
-npx --yes @agent-analytics/cli@0.5.41 auth status
-AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics" npx --yes @agent-analytics/cli@0.5.41 projects
+npx --yes @agent-analytics/cli@0.5.43 login --detached --project <name> --level read
+npx --yes @agent-analytics/cli@0.5.43 auth status
+AGENT_ANALYTICS_CONFIG_DIR="$PWD/.openclaw/agent-analytics" npx --yes @agent-analytics/cli@0.5.43 projects
 ```
 
 `--config-dir "$PWD/.openclaw/agent-analytics"` is also valid. Never commit `.openclaw/agent-analytics/config.json`. See `references/setup-auth.md` for more setup detail.
@@ -125,8 +131,8 @@ Use this closed-loop growth recipe for broad questions like where activation dro
 1. Resolve auth and project; account-wide questions start with `projects`.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 context get my-site
-npx --yes @agent-analytics/cli@0.5.41 funnel my-site --steps-json '[{"event":"page_view"},{"event":"signup_completed"},{"event":"first_value"}]'
+npx --yes @agent-analytics/cli@0.5.43 context get my-site
+npx --yes @agent-analytics/cli@0.5.43 funnel my-site --steps-json '[{"event":"page_view"},{"event":"signup_completed"},{"event":"first_value"}]'
 ```
 
 2. Read `context get <project>` and treat configured activation events as the activation source of truth. If activation is missing, ask for it or configure it; do not guess silently.
@@ -146,17 +152,17 @@ Portfolio surface-role diagnosis: identify each project's role in the growth sys
 
 ## Subject erasure
 
-`erase_subject` and `aa erase` delete one subject's data permanently. Run them only when the user explicitly asked to delete a specific person. Subject erasure is never part of the default analytics loop. Do not call it from funnel, path, retention, experiment, vitals, compare, context, or growth-diagnosis work.
+`erase_subject` and `aa erase` delete one subject's data permanently. Run them only when the user explicitly asked to delete a specific person. Erasure needs manage or admin. A read session gets 403 `FORBIDDEN_SCOPE`. Subject erasure is never part of the default analytics loop. Do not call it from funnel, path, retention, experiment, vitals, compare, context, or growth-diagnosis work.
 
 The call needs `confirm` set to the exact string `erase`, exactly one subject, and an idempotency key. The subject is one of `user_id`, `session_id`, or `email`. A missing confirm, two subjects, an empty subject, or a subject longer than 256 characters returns 400 `INVALID_ERASURE`. Pass `--idempotency-key`. If you omit it, the CLI generates a key and prints it. Keep that printed key and reuse it for a retry of the same erase. A different subject needs a new key. The same key with the same body returns the original job.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 erase my-site --user-id <user_id> --confirm erase --idempotency-key <key>
+npx --yes @agent-analytics/cli@0.5.43 erase my-site --user-id <user_id> --confirm erase --idempotency-key <key>
 ```
 
 `--session-id` or `--email` replaces `--user-id`. Pass exactly one.
 
-Agent sessions need the opt-in scope `erasures:write`. It is not in the default agent scopes. `analytics:read` and `projects:write` are not enough. MCP `erase_subject` is registered only when the session includes `erasures:write`, and it is not in the demo MCP. An agent session without that scope returns 403 `FORBIDDEN` with message `agent session missing required scope: erasures:write`. A browser-approved CLI session may call `erase`. Do not switch to MCP just to erase. The hourly cap is 20 accepts per account. Past that cap the call returns 429 `RATE_LIMITED` with reason `erasure_rate_limit`.
+Erasure needs manage or admin. That level grants the opt-in scope `erasures:write`. It is not in the default agent scopes. `analytics:read` and `projects:write` are not enough. MCP `erase_subject` is registered only when the session includes `erasures:write`, and it is not in the demo MCP. A read session gets 403 `FORBIDDEN_SCOPE`. Do not switch to MCP just to erase. The hourly cap is 20 accepts per account. Past that cap the call returns 429 `RATE_LIMITED` with reason `erasure_rate_limit`.
 
 Report the receipt id and the counts back. The receipt id is `id` (`era_...`). `status` is `pending`, `running`, `completed`, or `failed`. Report `counts`: `events`, `sessions`, `identity_rows`, `profiles`, `email_lookups`, `replay_sessions`, and `replay_objects`. If `status` is not `completed`, say so and do not invent counts. Read the finished receipt with `erasures get <id>`. Do not repeat the raw subject (`user_id`, `session_id`, or `email`) in the report.
 
@@ -165,9 +171,9 @@ Report the receipt id and the counts back. The receipt id is `id` (`era_...`). `
 For any Web Vitals or page speed question, the first read is the vitals read. CLI: `vitals <project> [--days N] [--from] [--to] [--by device|path] [--limit N] [--json]`. MCP: `web_vitals`. API: `POST /vitals` (GET with the same query params is ok). Args: `project`, `days`, `date_from`, `date_to`, `group_by` (`device` or `path`), `limit` (default 10, max 20). The event is fixed to `page_view`. It is Pro and costs one read per call. A free account gets 403 `PRO_REQUIRED` and that blocked call is not metered. Do not start this question with `query`. A shipped-change before/after still uses free `compare`.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 vitals my-site --days 7
-npx --yes @agent-analytics/cli@0.5.41 vitals my-site --days 7 --by device
-npx --yes @agent-analytics/cli@0.5.41 vitals my-site --days 7 --by path --limit 10
+npx --yes @agent-analytics/cli@0.5.43 vitals my-site --days 7
+npx --yes @agent-analytics/cli@0.5.43 vitals my-site --days 7 --by device
+npx --yes @agent-analytics/cli@0.5.43 vitals my-site --days 7 --by path --limit 10
 ```
 
 p75 is the headline (`percentile` is `p75`, `percentile_method` is `nearest_rank`). Report each metric as p75 with its unit, `rating`, `share`, and `n`. `skipped` counts page views in the group that lack that vital: no paint on that view, no interaction for INP, or an unsupported entry type. Report `n` and `skipped` as returned. Do not add a sample-size cutoff.
@@ -203,8 +209,8 @@ Before this query, run `properties-received <project>` (MCP `properties_received
 Revenue example. Record purchases as `aa.track('purchase', { revenue: 29, currency: 'USD' })`, then sum `revenue`. `29` and `USD` are the public example.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 properties-received my-site
-npx --yes @agent-analytics/cli@0.5.41 query my-site --metrics sum --property revenue --filter '[{"field":"event","op":"eq","value":"purchase"}]'
+npx --yes @agent-analytics/cli@0.5.43 properties-received my-site
+npx --yes @agent-analytics/cli@0.5.43 query my-site --metrics sum --property revenue --filter '[{"field":"event","op":"eq","value":"purchase"}]'
 ```
 
 `group_by` may include `event`, `date`, `user_id`, `session_id`, and `country`, plus at most one `properties.<key>`. The key uses the same rule as a `properties.<key>` filter: `^[A-Za-z0-9_]+$` and at most 128 characters. Dots and hyphens are not allowed in the key. An invalid key returns 400 `INVALID_PROPERTY_KEY`. A second `properties.*` entry returns 400 `INVALID_GROUP_BY`. Each result row carries the value under the key exactly `properties.<key>`. A null or missing property groups as null. Metrics, filters, and date range still apply, including Pro numeric metrics. The row limit stays capped at 1,000. `query` stays Pro.
@@ -212,8 +218,8 @@ npx --yes @agent-analytics/cli@0.5.41 query my-site --metrics sum --property rev
 Count page views by path, and signups by day and path:
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 query my-site --metrics event_count,unique_users --group-by properties.path --filter '[{"field":"event","op":"eq","value":"page_view"}]'
-npx --yes @agent-analytics/cli@0.5.41 query my-site --metrics event_count --group-by date,properties.path --filter '[{"field":"event","op":"eq","value":"signup_completed"}]'
+npx --yes @agent-analytics/cli@0.5.43 query my-site --metrics event_count,unique_users --group-by properties.path --filter '[{"field":"event","op":"eq","value":"page_view"}]'
+npx --yes @agent-analytics/cli@0.5.43 query my-site --metrics event_count --group-by date,properties.path --filter '[{"field":"event","op":"eq","value":"signup_completed"}]'
 ```
 
 MCP `query` takes `metrics`, `property`, `filters`, and `group_by`. `group_by` is an array of those strings, for example `["date", "properties.path"]`. `breakdown` (MCP `analytics_breakdown`) remains the short count of one property. Use `query` when you also need other metrics, filters, a date bucket, or another built-in group. Do not start broad growth diagnosis with `query`. Do not read a shipped change with `query`. Use `compare` for that read. `compare` with `metric` stays free.
@@ -225,8 +231,8 @@ Prefer `query` and `analytics_breakdown` (CLI `breakdown`). Use MCP `run_sql` or
 SQL covers a time window, so pass `days` or a date range. `days` defaults to 7 and maxes at 90. `date_from` and `date_to` are `YYYY-MM-DD`, and the span is at most 90 days. A bad window is 400 `INVALID_WINDOW`. The response `window` has `date_from` and `date_to`. The server applies the window, so rows outside it are not returned.
 
 ```bash
-npx --yes @agent-analytics/cli@0.5.41 sql my-site --days 7 --sql 'SELECT e.date, s.entry_page, COUNT(*) AS n FROM events e JOIN sessions s ON s.session_id = e.session_id GROUP BY e.date, s.entry_page LIMIT 100'
-npx --yes @agent-analytics/cli@0.5.41 sql my-site --from 2026-04-01 --to 2026-04-07 -f query.sql
+npx --yes @agent-analytics/cli@0.5.43 sql my-site --days 7 --sql 'SELECT e.date, s.entry_page, COUNT(*) AS n FROM events e JOIN sessions s ON s.session_id = e.session_id GROUP BY e.date, s.entry_page LIMIT 100'
+npx --yes @agent-analytics/cli@0.5.43 sql my-site --from 2026-04-01 --to 2026-04-07 -f query.sql
 ```
 
 Pass the statement with `--sql` or `-f`. CLI `--days` sets `days`. CLI `--from` and `--to` set `date_from` and `date_to`. v1 accepts one `SELECT`. A statement that starts with `WITH` is rejected. Each of `events` and `sessions` may be referenced at most once per statement. One `events`-`sessions` join is fine. A self-join is 400 `INVALID_SQL`. A `LIMIT` must be a plain integer. One query at a time per account. If one is already running, the call is 429 `SQL_BUSY` with `Retry-After`. A heavy read can return 429 `SQL_COOLDOWN` with `Retry-After`. On `SQL_BUSY`, `SQL_COOLDOWN`, or `SQL_UPSTREAM_RATE_LIMITED`, wait for `Retry-After` instead of retrying in a loop. The server exposes only this project's rows. `properties` is a JSON string. `resolved_user_id` is not a column. `events` has no `project_id` column. `sessions.project_id` is the project name.
@@ -277,13 +283,14 @@ Next: split setup-copy users by selected runtime and first_event_received.
 
 Load references only when they are needed:
 
-- `references/setup-auth.md`: login modes, managed-runtime storage, paid-tier handoff, and safe command examples.
+- `references/setup-auth.md`: login modes, access level, managed-runtime storage, paid-tier handoff, and safe command examples.
 - `references/product-analytics-operating-model.md`: projects/surfaces/portfolios, consent-based instrumentation, context upkeep, and verification.
 - `references/growth-recipes.md`: AARRR, Bullseye, AIDA, STP, JTBD, 4Ps, funnel/retention/experiment recipes, the change read recipe (including `metric`, hosted `metric_event page_view` for `cwv_lcp`, `better=lower`, `no_interval_for_metric`, and the `errors` guardrail), and copyable prompts. Web Vitals thresholds and `cwv_pass` are in the Web Vitals section above.
 
 ## Pitfalls
 
 - Do not run `erase_subject` or `aa erase` unless the user explicitly asked to delete a specific person. The delete is permanent and is never part of the default analytics loop.
+- A 404 on another project means the session is limited to its granted project.
 - Do not use URL-only assumptions instead of code inspection when repo access exists.
 - Do not create a project for every subdomain, localhost URL, staging URL, or preview.
 - Do not install generic click/pageview duplicates for automatic tracker signals.
